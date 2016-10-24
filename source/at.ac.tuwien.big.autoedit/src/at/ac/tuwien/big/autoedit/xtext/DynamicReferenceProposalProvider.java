@@ -80,6 +80,7 @@ public class DynamicReferenceProposalProvider extends AbstractJavaBasedContentPr
 				ConfigurableCompletionProposal conf = (ConfigurableCompletionProposal)prop;
 				conf.setAdditionalData("index", ind);
 				conf.setDisplayString(conf.getDisplayString()+" - Quality " + quality.get(candidate)[0]+", Cost "+quality.get(candidate)[1]+"");
+				conf.setPriority(9999-ind);
 			}
 			acceptor.accept(prop);
 			++ind;

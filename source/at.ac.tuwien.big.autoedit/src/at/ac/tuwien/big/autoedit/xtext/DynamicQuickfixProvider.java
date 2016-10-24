@@ -162,6 +162,33 @@ public class DynamicQuickfixProvider extends org.eclipse.xtext.ui.editor.quickfi
 			}
 		}
 	  }
+	  
+	  
+	  public static class ChangeIModification implements IModification, Comparable<ChangeIModification> {
+		  public QuickfixReference ref;
+		  
+		  public ChangeIModification(QuickfixReference ref) {
+			  this.ref = ref;
+		 }
+	
+			@Override
+			public void apply(IModificationContext context) throws Exception {
+				Change<?> ch = ref.getChange();
+				/*if (element.eResource() != ch.forResource()) {
+					ch = ch.clone();
+					ch.transfer(new URIBasedEcoreTransferFunction(ch.forResource(),element.eResource()));
+				}*/
+				
+				modify(context.getXtextDocument(), ch);
+			}
+
+			@Override
+			public int compareTo(ChangeIModification o) {
+				return ref.compareTo(o.ref);
+			}
+		   
+	  }
+	  
 	@Override
 	public List<IssueResolution> getResolutions(final Issue issue) {
 		if (issue.getData().length != 3) {
@@ -185,7 +212,7 @@ public class DynamicQuickfixProvider extends org.eclipse.xtext.ui.editor.quickfi
 				continue;
 			}
 			IModificationContext context = getModificationContextFactory().createModificationContext(issue);
-			ISemanticModification smod = new ISemanticModification() {
+			/*ISemanticModification smod = new ISemanticModification() {
 				
 				@Override
 				public void apply(EObject element, IModificationContext context) throws Exception {
@@ -199,21 +226,11 @@ public class DynamicQuickfixProvider extends org.eclipse.xtext.ui.editor.quickfi
 					
 					
 				}
-			};
-			SemanticModificationWrapper modificationWrapper = new SemanticModificationWrapper(issue.getUriToProblem(), smod);
-			IModification modification = new IModification() {
 				
-				@Override
-				public void apply(IModificationContext context) throws Exception {
-					Change<?> ch = ref.getChange();
-					/*if (element.eResource() != ch.forResource()) {
-						ch = ch.clone();
-						ch.transfer(new URIBasedEcoreTransferFunction(ch.forResource(),element.eResource()));
-					}*/
-					
-					modify(context.getXtextDocument(), ch);
-				}
-			}; 
+				write class to have value things ...
+			};
+			SemanticModificationWrapper modificationWrapper = new SemanticModificationWrapper(issue.getUriToProblem(), smod);*/
+			IModification modification = new ChangeIModification(ref);
 			//Ich hoffe, wenn ich das übreschreibe passt es
 			IssueResolution res = new IssueResolution(ref.getName(), 
 					ref.getDescription(), ref.getImage(), context,  modification);	

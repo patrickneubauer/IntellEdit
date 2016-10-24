@@ -136,6 +136,7 @@ public class DynamicProposalProvider extends TerminalsProposalProvider {
 				configurable.setAdditionalData("cost", dv[1]);
 				configurable.setAdditionalData("index", curAssignments);
 				configurable.setDisplayString(displayTextNoCost);
+				configurable.setPriority(9999-curAssignments);
 			}
 			acceptor.accept(proposal);
 			if (++curAssignments > MAX_ASSIGNMENTS) {

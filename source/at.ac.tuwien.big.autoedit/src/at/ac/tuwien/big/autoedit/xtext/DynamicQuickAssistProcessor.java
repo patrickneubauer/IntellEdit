@@ -4,9 +4,15 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+import org.eclipse.jface.text.Position;
 import org.eclipse.jface.text.contentassist.ICompletionProposal;
 import org.eclipse.xtext.ui.editor.contentassist.ConfigurableCompletionProposal;
+import org.eclipse.xtext.ui.editor.model.edit.IModification;
+import org.eclipse.xtext.ui.editor.quickfix.IssueResolution;
+import org.eclipse.xtext.ui.editor.quickfix.QuickAssistCompletionProposal;
 import org.eclipse.xtext.ui.editor.quickfix.XtextQuickAssistProcessor;
+
+import at.ac.tuwien.big.autoedit.xtext.DynamicQuickfixProvider.ChangeIModification;
 
 public class DynamicQuickAssistProcessor extends XtextQuickAssistProcessor {
 	
@@ -23,9 +29,22 @@ public class DynamicQuickAssistProcessor extends XtextQuickAssistProcessor {
 						return ((Integer)co1).compareTo((Integer)co2);
 					}
 				}
+				if (o1 instanceof PositionedQuickAssistCompletionProposal && o2 instanceof PositionedQuickAssistCompletionProposal) {
+					return ((PositionedQuickAssistCompletionProposal)o1).compareTo((PositionedQuickAssistCompletionProposal)o2);
+				}
 				return 0;
 			}
 		});
+	}
+	
+	@Override
+	protected ICompletionProposal create(Position posisition, IssueResolution resolution) {
+		IModification mod = resolution.getModification();
+		if (mod instanceof ChangeIModification) {
+			return new PositionedQuickAssistCompletionProposal((ChangeIModification)mod, posisition, resolution, getImage(resolution));
+		} else {
+			return super.create(posisition, resolution);
+		}
 	}
 
 }
