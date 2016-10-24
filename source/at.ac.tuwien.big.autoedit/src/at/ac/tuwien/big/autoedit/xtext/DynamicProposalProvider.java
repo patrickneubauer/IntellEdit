@@ -123,14 +123,19 @@ public class DynamicProposalProvider extends TerminalsProposalProvider {
 		for (Object o: possible) {
 			String proposalText = String.valueOf(o);
 			double[] dv = map.get(o);
-			String displayText = Change.costToInvisible(curAssignments, true)+proposalText + " - " + featureName + " - quality " +dv[0]+", cost "+dv[1];
-			ICompletionProposal proposal = createCompletionProposal(proposalText, displayText, null, contentAssistContext);
+			String displayTextNoCost = proposalText + " - " + featureName + " - quality " +dv[0]+", cost "+dv[1];
+			String displayTextCost = Change.costToInvisible(curAssignments, true)+displayTextNoCost;
+			ICompletionProposal proposal = createCompletionProposal(proposalText, displayTextCost, null, contentAssistContext);
 			if (proposal instanceof ConfigurableCompletionProposal) {
 				ConfigurableCompletionProposal configurable = (ConfigurableCompletionProposal) proposal;
 				configurable.setSelectionStart(configurable.getReplacementOffset());
 				configurable.setSelectionLength(proposalText.length());
 				configurable.setAutoInsertable(false);
 				configurable.setSimpleLinkedMode(contentAssistContext.getViewer(), '\t', ' ');
+				configurable.setAdditionalData("quality", dv[0]);
+				configurable.setAdditionalData("cost", dv[1]);
+				configurable.setAdditionalData("index", curAssignments);
+				configurable.setDisplayString(displayTextNoCost);
 			}
 			acceptor.accept(proposal);
 			if (++curAssignments > MAX_ASSIGNMENTS) {

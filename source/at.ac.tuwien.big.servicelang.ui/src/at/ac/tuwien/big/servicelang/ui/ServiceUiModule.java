@@ -5,7 +5,9 @@ package at.ac.tuwien.big.servicelang.ui;
 
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.eclipse.xtext.ui.editor.contentassist.AbstractJavaBasedContentProposalProvider;
+import org.eclipse.xtext.ui.editor.quickfix.XtextQuickAssistProcessor;
 
+import at.ac.tuwien.big.autoedit.xtext.DynamicQuickAssistProcessor;
 import at.ac.tuwien.big.autoedit.xtext.DynamicReferenceProposalProvider;
 
 /**
@@ -25,6 +27,12 @@ public class ServiceUiModule extends at.ac.tuwien.big.servicelang.ui.AbstractSer
 	
 	public Class<? extends AbstractJavaBasedContentProposalProvider.ReferenceProposalCreator> bindAbstractJavaBasedContentProposalProvider$ReferenceProposalCreator() {
 		return DynamicReferenceProposalProvider.class;
+	}
+	
+
+	// Registers our own custom quick assist processor to support templates.
+	public Class<? extends XtextQuickAssistProcessor> bindXtextQuickAssistProcessor() {
+		return DynamicQuickAssistProcessor.class;
 	}
 
 }
