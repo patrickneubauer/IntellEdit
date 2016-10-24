@@ -1,0 +1,28 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: at.ac.tuwien.big.servicelang
+Bundle-Vendor: My Company
+Bundle-Version: 1.0.0.qualifier
+Bundle-SymbolicName: at.ac.tuwien.big.servicelang; singleton:=true
+Bundle-ActivationPolicy: lazy
+Require-Bundle: at.ac.tuwien.big.autoedit;bundle-version="1.0.0",
+ org.eclipse.xtext;visibility:=reexport,
+ org.eclipse.equinox.common;bundle-version="3.5.0",
+ at.ac.tuwien.big.serviceexample,
+ org.eclipse.xtext.util,
+ org.eclipse.xtext.xbase.lib,
+ org.antlr.runtime,
+ org.eclipse.xtext.common.types,
+ org.objectweb.asm;bundle-version="[5.0.1,6.0.0)";resolution:=optional,
+ at.ac.tuwien.big.oclgen
+Import-Package: org.apache.log4j
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Export-Package: at.ac.tuwien.big.servicelang,
+ at.ac.tuwien.big.servicelang.services,
+ at.ac.tuwien.big.servicelang.serializer,
+ at.ac.tuwien.big.servicelang.parser.antlr,
+ at.ac.tuwien.big.servicelang.parser.antlr.internal,
+ at.ac.tuwien.big.servicelang.validation,
+ at.ac.tuwien.big.servicelang.scoping,
+ at.ac.tuwien.big.servicelang.generator,
+ at.ac.tuwien.big.servicelang.formatting

@@ -15,6 +15,16 @@ We illustrate and provide an initial evaluation of our approach based on an Xtex
 
 See also [IntellEdit Project Website](http://intelledit.big.tuwien.ac.at).
 
+#### How to run
+
+After importing all projects in Eclipse, you have to do the following steps:
+
+* Clean the workspace
+* Rightclick on at.ac.tuwien.big.serviceexample/model/serviceexample.ecore and register the package
+* Open the at.ac.tuwien.big.servicelang/src/at.ac.tuwien.big.servicelang/Service.xtext, do a null change and save the file
+* Run everything as eclipse application and create a new project with a file containing the content of at.ac.tuwien.big.serviceexample/model/test.service
+* The validation of the file is only applied after each save
+
 #### External Resources
 
 * Our prototype builds on the [Eclipse Modeling Framework](https://eclipse.org/modeling/emf/) and the [Xtext framework](https://eclipse.org/Xtext/) 
