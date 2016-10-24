@@ -23,6 +23,7 @@ After importing all projects in Eclipse, you have to do the following steps:
 2. Right-click on "at.ac.tuwien.big.serviceexample/model/serviceexample.ecore" and register the package
 3. Open the file "at.ac.tuwien.big.servicelang/src/at.ac.tuwien.big.servicelang/Service.xtext", perform a change in the same file, revert the change, and save the null change (this will remove any errors displayed in the grammar editor)
 4. Run everything as eclipse application by right-clicking on any imported project in the package explorer and select "Run As > Eclipse Application" (a new Eclipse instance will open)
++ In case there are still errors in the workspace, click "Proceed" in the eventually opening pop-up window
 5. Create a new empty project in the new Eclipse instance and a file ending with ".service", i.e., representing a model of our exemplary DSML
 6. Copy and paste the content from the file "at.ac.tuwien.big.serviceexample/model/test.service" to the ".service" file you just created
 1. The validation of the file is only applied after each save
