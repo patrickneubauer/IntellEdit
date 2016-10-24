@@ -44,7 +44,8 @@ public  class ExpressionQuickfixInfo<T extends Comparable<T>> {
 			if (prop.getQuality() instanceof Number) {
 				str = Change.costToInvisible(((Number)prop.getQuality()).doubleValue(), false);
 			}
-			ret.add(new QuickfixReferenceImpl(Change.costToInvisible(prop.getCurQuality(), false)+str+Change.costToInvisible(prop.getCosts(),true)+change.getName(contextUri),
+			String invisibleString = Change.costToInvisible(prop.getCurQuality(), false)+str+Change.costToInvisible(prop.getCosts(),true);
+			ret.add(new QuickfixReferenceImpl(change.getName(contextUri),
 				change.toString(contextUri)+", Local-Score: " + prop.getCurQuality()+", Score: " + prop.getQuality()+", Cost "+prop.getCosts(), change));
 		}
 		return ret;

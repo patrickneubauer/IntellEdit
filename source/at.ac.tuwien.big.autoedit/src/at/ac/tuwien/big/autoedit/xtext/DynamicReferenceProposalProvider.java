@@ -78,7 +78,8 @@ public class DynamicReferenceProposalProvider extends AbstractJavaBasedContentPr
 			ICompletionProposal prop = wrappedFactory.apply(candidate);
 			if (prop instanceof ConfigurableCompletionProposal) {
 				ConfigurableCompletionProposal conf = (ConfigurableCompletionProposal)prop;
-				conf.setDisplayString(Change.costToInvisible(ind, true)+conf.getDisplayString()+" - Quality " + quality.get(candidate)[0]+", Cost "+quality.get(candidate)[1]+"");
+				conf.setAdditionalData("index", ind);
+				conf.setDisplayString(conf.getDisplayString()+" - Quality " + quality.get(candidate)[0]+", Cost "+quality.get(candidate)[1]+"");
 			}
 			acceptor.accept(prop);
 			++ind;
