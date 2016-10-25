@@ -16,6 +16,7 @@ import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.Stack;
 
+import javax.xml.bind.JAXBElement.GlobalScope;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter.DEFAULT;
 
 import org.eclipse.emf.ecore.EObject;
@@ -27,6 +28,7 @@ import org.eclipse.ocl.EvaluationEnvironment;
 import org.eclipse.ocl.EvaluationVisitor;
 import org.eclipse.ocl.ecore.EcoreEnvironmentFactory;
 import org.eclipse.ocl.ecore.OCLExpression;
+import org.eclipse.ocl.ecore.delegate.OCLInvocationDelegateFactory.Global;
 import org.omg.CORBA.portable.RemarshalException;
 
 import at.ac.tuwien.big.autoedit.change.Change;
@@ -41,6 +43,7 @@ import at.ac.tuwien.big.autoedit.evaluate.EvaluableManager;
 import at.ac.tuwien.big.autoedit.evaluate.EvaluationState;
 import at.ac.tuwien.big.autoedit.evaluate.impl.EvaluableManagerImpl;
 import at.ac.tuwien.big.autoedit.fixer.MakeTrue;
+import at.ac.tuwien.big.autoedit.global.GlobalSearch;
 import at.ac.tuwien.big.autoedit.oclvisit.EvalResult;
 import at.ac.tuwien.big.autoedit.oclvisit.FixAttemptReferenceInfo;
 import at.ac.tuwien.big.autoedit.oclvisit.RejectingFilterManager;
@@ -178,6 +181,7 @@ public class LocalSearchInterfaceImpl implements LocalSearchInterface {
 			totalOldChanges.add(ch);
 		}
 		Change<?> oldr = new CompositeChangeImpl(clonedRes.getResource(), totalOldChanges);
+		oldr.removeEmptyWhenExecuting();
 		oldr.removeUnnecessarySubchanges();
 		if (oldr.unbox().size() == 1) {
 			oldr = oldr.unbox().get(0);
@@ -299,6 +303,7 @@ public class LocalSearchInterfaceImpl implements LocalSearchInterface {
 				Change<?> oriChange = checkSolutions.get(curCheckSolutionIndex);
 				Change<?> curChange = oriChange.transfered(transferFunc);
 				Undoer undoer = curChange.execute();
+				clonedRes.checkResource();
 				try {
 					++processedChanges;
 					EvaluationState state = manager.basicEvaluate(clonedRes,getOriginalEvaluable(), getContext());
@@ -327,18 +332,23 @@ public class LocalSearchInterfaceImpl implements LocalSearchInterface {
 						 if (allSolutions.add(oriChange.unbox())) {
 							 returnedSolutions.add(oriChange);
 							 undoer.undo();
-							 getStream().add(curChange,oriChange, 1.0, oriChange.getCosts());
+							 if (!GlobalSearch.FILTER_GRAMMAR_ERROR ) {
+								 getStream().add(curChange,oriChange, 1.0, oriChange.getCosts());
+							 }
 							 undoer = curChange.execute();
 						 }
 					}
 				} finally {
 					undoer.undo();
+					clonedRes.checkResource();
 				}
 			}
 			if (curCheckSolutionIndex >= checkSolutions.size() && !checkSolutions.isEmpty()) {
 				checkSolutions.clear();
 			}
 		}
+		Copier newCopier = new EcoreUtil.Copier();
+		MyResource oldBase = clonedRes.clone(newCopier);
 		try {
 		while (!curSolutions.isEmpty()) {
 			if (abort || new Date().getTime() >= endTime) {
@@ -479,6 +489,10 @@ public class LocalSearchInterfaceImpl implements LocalSearchInterface {
 				for (int i = undoers.size()-1; i >= 0; --i) {
 					undoers.get(i).undo();
 				}
+			}
+			if (!clonedRes.equals(oldBase, new EcoreMapTransferFunction(clonedRes.getResource(),
+					oldBase.getResource(), newCopier))) {
+				System.err.println("....");
 			}
 		}
 			

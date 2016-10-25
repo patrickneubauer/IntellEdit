@@ -10,6 +10,7 @@ import org.eclipse.emf.ecore.EStructuralFeature;
 import at.ac.tuwien.big.autoedit.change.parameter.StaticScopeParameterType;
 import at.ac.tuwien.big.autoedit.scope.DynamicEqualProbabilityScope;
 import at.ac.tuwien.big.autoedit.scope.ValueScope;
+import at.ac.tuwien.big.autoedit.transfer.EcoreTransferFunction;
 
 public interface ParameterType<Type extends ChangeType<Type,?>, PType> {
 
@@ -33,5 +34,7 @@ public interface ParameterType<Type extends ChangeType<Type,?>, PType> {
 	public static<T extends ChangeType<T,U>,U extends Change<U>,R> ParameterType<T, R> constant(R obj) {
 		return StaticScopeParameterType.fromEqualProbabilityList((Class)((obj==null)?Object.class:obj.getClass()), Collections.singletonList(obj));
 	}
+
+	public void transfer(EcoreTransferFunction transferFunc);
 	
 }

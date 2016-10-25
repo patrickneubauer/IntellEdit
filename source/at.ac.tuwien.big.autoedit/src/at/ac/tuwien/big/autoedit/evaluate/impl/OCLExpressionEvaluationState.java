@@ -100,7 +100,7 @@ public class OCLExpressionEvaluationState implements EvaluationState<OCLExpressi
 		env = fact.createEvaluationEnvironment();
 		env.add(Environment.SELF_VARIABLE_NAME, obj);		
 	}
-	
+
 	
 
 }

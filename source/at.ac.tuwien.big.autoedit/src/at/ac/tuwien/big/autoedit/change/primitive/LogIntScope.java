@@ -3,6 +3,7 @@ package at.ac.tuwien.big.autoedit.change.primitive;
 import java.util.Iterator;
 
 import at.ac.tuwien.big.autoedit.scope.ValueScope;
+import at.ac.tuwien.big.autoedit.transfer.EcoreTransferFunction;
 import at.tuwien.big.virtmod.datatype.IteratorUtils;
 
 public class LogIntScope implements ValueScope<Integer, Boolean>{
@@ -59,6 +60,10 @@ public class LogIntScope implements ValueScope<Integer, Boolean>{
 	public Iterator<Integer> sample() {
 		Iterator<Long> otherSampler = base.sample();
 		return IteratorUtils.convert(otherSampler, (x)->(int)(long)x);
+	}
+	
+	@Override
+	public void transfer(EcoreTransferFunction transferFunc) {
 	}
 
 }

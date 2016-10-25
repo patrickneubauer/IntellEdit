@@ -47,6 +47,7 @@ public class EObjectChangeMap {
 		List<BasicChange<?>> createChanges = new ArrayList<BasicChange<?>>();
 		List<BasicChange<?>> attributeChanges = new ArrayList<BasicChange<?>>();
 		List<EObject> eobjList = new ArrayList<EObject>(changeMap.keySet());
+		eobjList.removeIf((x)->(x == null));
 		Collections.sort(eobjList, new Comparator<EObject>() {
 
 			@Override
@@ -67,6 +68,7 @@ public class EObjectChangeMap {
 		for (EObject eobj: eobjList) {
 			Map<EStructuralFeature, List<BasicChange<?>>> eval = changeMap.get(eobj);
 			List<EStructuralFeature> sorted = new ArrayList<EStructuralFeature>(eval.keySet());
+			sorted.removeIf((x)->x == null);
 			Collections.sort(sorted, new Comparator<EStructuralFeature>() {
 
 				@Override

@@ -28,10 +28,13 @@ import at.ac.tuwien.big.autoedit.search.local.impl.Evaluation;
 import at.ac.tuwien.big.autoedit.search.local.impl.ResourceEvaluator;
 import at.ac.tuwien.big.autoedit.search.local.impl.ViolatedConstraintsEvaluator;
 import at.ac.tuwien.big.autoedit.transfer.EcoreTransferFunction;
+import at.ac.tuwien.big.autoedit.transfer.URIBasedEcoreTransferFunction;
 import at.ac.tuwien.big.autoedit.xtext.DynamicValidator;
 import at.ac.tuwien.big.autoedit.xtext.DynamicValidatorIFace;
 
 public class GlobalSearch {
+	
+	public static final boolean FILTER_GRAMMAR_ERROR = true;
 	
 	private DynamicValidatorIFace valid;
 	private SimpleStream<Change<?>> stream;
@@ -90,19 +93,23 @@ public class GlobalSearch {
 						
 						@Override
 						public Solution[] evolve(Solution[] parents) {
-							Solution first = parents[0];								
-							int randInd = random.nextInt(first.getNumberOfVariables());
-							MyResourceContainer container = (MyResourceContainer)first.getAttribute("container");
-							EcoreTransferFunction tf = container.pullResource();
-							Stack<Undoer> undos = new Stack<Undoer>();
-							for (int i = 0; i < randInd; ++i) {
-								MOEAChangeVariable var = (MOEAChangeVariable)first.getVariable(randInd);
-								if (var == null || var.getCurChange() == null) {continue;}
-								undos.push(var.getCurChange().transfered(tf).execute());
-							}
-							((MOEAChangeVariable)first.getVariable(randInd)).randomChange(tf);
-							while (!undos.isEmpty()) {
-								undos.pop().undo();
+							Solution first = parents[0];					
+							try {
+								int randInd = random.nextInt(first.getNumberOfVariables());
+								MyResourceContainer container = (MyResourceContainer)first.getAttribute("container");
+								EcoreTransferFunction tf = container.pullResource();
+								Stack<Undoer> undos = new Stack<Undoer>();
+								for (int i = 0; i < randInd; ++i) {
+									MOEAChangeVariable var = (MOEAChangeVariable)first.getVariable(randInd);
+									if (var == null || var.getCurChange() == null) {continue;}
+									undos.push(var.getCurChange().transfered(tf).execute());
+								}
+								((MOEAChangeVariable)first.getVariable(randInd)).randomChange(tf);
+								while (!undos.isEmpty()) {
+									undos.pop().undo();
+								}
+							} catch (Exception e) {
+								e.printStackTrace();
 							}
 							return parents;
 						}
@@ -118,7 +125,7 @@ public class GlobalSearch {
 		});
 	}
 	
-	public GlobalSearch(Resource resource, DynamicValidatorIFace valid, SimpleStream<Change<?>> stream) {
+	public GlobalSearch(MyResource resource, DynamicValidatorIFace valid, SimpleStream<Change<?>> stream) {
 		
 		this.valid = valid;
 		this.stream = stream;
@@ -135,14 +142,14 @@ public class GlobalSearch {
 		return container;
 	}
 	
-	public void setResource(Resource res) {
+	public void setResource(MyResource res) {
 		try {
-		if (resource != null && resource.equals(res)) {
+		/*if (resource != null && resource.equals(res)) {
 			return;
-		}
+		}*/
 		
-		this.resource = res;
-		this.container = new MyResourceContainer(MyResource.get(resource));
+		this.resource = res.getResource();
+		this.container = new MyResourceContainer(res.clone());
 		abortSearch();
 		startSearch();
 		} catch (Exception e) {
@@ -153,12 +160,15 @@ public class GlobalSearch {
 	
 	public void changedSomething() {
 		if (resource != null) {
-			container = new MyResourceContainer(MyResource.get(resource));
+			container = new MyResourceContainer(MyResource.get(resource).clone());
 		}
 	}
+	
+	private Thread t;
 
 	public void startSearch() {
-		Thread t = new Thread(()->{
+		aborted = false;
+		t = new Thread(()->{
 		Problem problem = new AbstractProblem(20,3) {			
 			
 			@Override
@@ -173,7 +183,7 @@ public class GlobalSearch {
 					Solution sol = new Solution(getNumberOfVariables(), getNumberOfObjectives());
 					sol.setAttribute("container", container);
 					for (int i = 0; i < getNumberOfVariables(); ++i) {
-						MOEAChangeVariable var = new MOEAChangeVariable(valid);
+						MOEAChangeVariable var = new MOEAChangeVariable(GlobalSearch.this);
 						sol.setVariable(i, var);
 					}
 					return sol;
@@ -185,10 +195,14 @@ public class GlobalSearch {
 			
 			@Override
 			public void evaluate(Solution sol) {
+				if (t.isInterrupted()) {
+					return;
+				}
 				try {
 				EcoreTransferFunction tf = container.pullResource();
 				MyResource trg = MyResource.get(tf.forwardResource());
 				List<Change<?>> chs = new ArrayList<Change<?>>();
+				sol.setAttribute("container", container);
 				
 				for (int i = 0; i < getNumberOfVariables(); ++i)  {
 					Variable  var = sol.getVariable(i);
@@ -198,6 +212,15 @@ public class GlobalSearch {
 					if (var instanceof MOEAChangeVariable) {
 						MOEAChangeVariable mvar = (MOEAChangeVariable)var;
 						if (mvar.getCurChange() != null) {
+							//mvar.getCurChange().checkChange();
+							if (!mvar.getCurChange().forResource().equals(tf.backResource())) {
+								URIBasedEcoreTransferFunction utf = new URIBasedEcoreTransferFunction(mvar.getCurChange().forResource(), tf.backResource());
+								mvar.getCurChange().transfer(utf);
+								mvar.getCurChange().checkChange();
+							} else {
+								mvar.getCurChange().checkChange();
+							}
+							
 							chs.add(mvar.getCurChange().transfered(tf));
 						}
 					} else {
@@ -222,7 +245,14 @@ public class GlobalSearch {
 				} else {
 					sol.setObjective(2, 99999999);
 				}
-				stream.add(cci, cci.transfered(tf.inverse()), constraintsViolated[0], constraintsViolated[1], constraintsViolated[2]);
+				if (constraintsViolated[2] > 0.0 && (constraintsViolated[8] == 0.0 || !FILTER_GRAMMAR_ERROR) ) {
+					cci = cci.clone();
+					cci.checkChange();
+					cci.removeEmptyWhenExecuting();
+					cci.removeUnnecessarySubchanges();
+					cci.checkChange();
+					stream.add(cci, cci.transfered(tf.inverse()), constraintsViolated);
+				}
 				container.pushResource(tf);
 				} catch (Exception e) {
 					String str = Arrays.toString(e.getStackTrace()).replace(",","\n");
@@ -249,13 +279,28 @@ public class GlobalSearch {
 		
 	}
 	
+	private boolean aborted;
+	
 	public void abortSearch() {
+		aborted = true;
 		if (exec != null) {
 			exec.cancel();
+		}
+		try {
+			if (t != null) {
+				t.interrupt();
+			}
+		} catch (Exception e) {
+			
 		}
 	}
 	
 	Executor exec;
+
+	public Change<?> randomQuickfix(Random random) {
+		Change<?> qf = valid.randomQuickfix(random);
+		return qf;
+	}
 
 	
 

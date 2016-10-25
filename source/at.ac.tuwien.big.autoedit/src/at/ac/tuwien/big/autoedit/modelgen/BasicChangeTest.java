@@ -11,11 +11,6 @@ import java.util.Map;
 import java.util.Random;
 
 import org.eclipse.emf.common.util.URI;
-import org.eclipse.emf.compare.Comparison;
-import org.eclipse.emf.compare.Diff;
-import org.eclipse.emf.compare.EMFCompare;
-import org.eclipse.emf.compare.scope.DefaultComparisonScope;
-import org.eclipse.emf.compare.scope.IComparisonScope;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.util.EcoreUtil;
 import org.eclipse.emf.ecore.util.EcoreUtil.Copier;
@@ -31,6 +26,7 @@ import at.ac.tuwien.big.autoedit.search.local.impl.ViolatedConstraintsEvaluator;
 import at.ac.tuwien.big.autoedit.test.OclExtractor;
 import at.ac.tuwien.big.autoedit.transfer.EcoreMapTransferFunction;
 import at.ac.tuwien.big.autoedit.transfer.EcoreTransferFunction;
+import at.ac.tuwien.big.autoedit.transfer.URIBasedEcoreTransferFunction;
 
 public class BasicChangeTest {
 	
@@ -52,16 +48,20 @@ public class BasicChangeTest {
 			EcoreUtil.Copier copier = new EcoreUtil.Copier();
 			MyResource cloned = res.clone(copier);
 			EcoreTransferFunction etf = new EcoreMapTransferFunction(res.getResource(), cloned.getResource(), copier);
+			etf = new URIBasedEcoreTransferFunction(res.getResource(), cloned.getResource());
 			if (!res.equals(cloned,etf)) {
 				System.err.println("Clone error!!");
 			}
 			
 			for (int j = 0; j < 1000; ++j) {
 				Change<?> ch = res.randomChange(random).compileWithMissing();
-				
 				if (ch != null) {
+					if (ch.toString().contains("Cluster")) {
+						System.err.println();
+					}
 					System.out.print("Trying " + ch+" ==> ");
-					ch.transfered(etf).execute().undo();
+					Undoer ud = ch.transfered(etf).execute();
+					ud.undo();
 					if (!res.equals(cloned,etf)) {
 						System.out.println("ERROR");
 						Map<Object,Object> options = new HashMap<Object, Object>();

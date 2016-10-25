@@ -5,6 +5,7 @@ import java.util.Iterator;
 import java.util.Random;
 
 import at.ac.tuwien.big.autoedit.scope.ValueScope;
+import at.ac.tuwien.big.autoedit.transfer.EcoreTransferFunction;
 
 public class BooleanScope implements ValueScope<Boolean, Boolean> {
 	
@@ -35,6 +36,10 @@ public class BooleanScope implements ValueScope<Boolean, Boolean> {
 	@Override
 	public ContinuousIterator<Boolean> sample() {
 		return ()->random.nextBoolean();
+	}
+
+	@Override
+	public void transfer(EcoreTransferFunction transferFunc) {
 	}
 
 

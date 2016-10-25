@@ -2,6 +2,8 @@
  */
 package serviceexample.impl;
 
+import java.util.Arrays;
+
 import org.eclipse.emf.common.notify.Notification;
 
 import org.eclipse.emf.ecore.EClass;
@@ -35,6 +37,9 @@ public class NamedThingImpl extends MinimalEObjectImpl.Container implements Name
 	 * @ordered
 	 */
 	protected static final String NAME_EDEFAULT = null;
+	
+	public final String createdIn = Arrays.toString(Thread.currentThread().getStackTrace()).replace(",", "\n");
+	
 
 	/**
 	 * The cached value of the '{@link #getName() <em>Name</em>}' attribute.

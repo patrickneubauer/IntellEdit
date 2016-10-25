@@ -1,5 +1,6 @@
 package at.ac.tuwien.big.autoedit.ecore.util;
 
+import java.lang.reflect.Constructor;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -10,9 +11,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import org.eclipse.emf.ecore.EAttribute;
 import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EObject;
+import org.eclipse.emf.ecore.EReference;
 import org.eclipse.emf.ecore.EStructuralFeature;
+import org.eclipse.emf.ecore.impl.DynamicEObjectImpl;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.resource.ResourceSet;
 import org.eclipse.emf.ecore.util.EcoreUtil;
@@ -124,6 +128,69 @@ public class MyEcoreUtil {
 			}
 			return -1;
 		}
+	}
+	
+	
+	public static EObject nearCopy(EObject from, Map<EObject,EObject> map) {
+		EObject ret = map.get(from);
+		if (from == null) {
+			return ret;
+		}
+		if (ret == null) {
+			if (from instanceof DynamicEObjectImpl) {
+				ret = new DynamicEObjectImpl(from.eClass());
+			} else {
+				Class<?> cl = from.getClass();
+				try {
+					Constructor<?> con = cl.getDeclaredConstructor();
+					con.setAccessible(true);
+					ret = (EObject)con.newInstance();
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} 
+			}
+			map.put(from,ret);
+			EObject cont = from.eContainer();
+			if (cont != null) {
+				EReference cfeat = (EReference)from.eContainingFeature();
+				List l = (List)MyEcoreUtil.getAsCollection(cont, cfeat);
+				int myInd = l.indexOf(from);
+				if (myInd != -1) {
+					EObject retCont = nearCopy(cont, map);
+					//Da werden automatisch auch die Referenzen mitkopiert
+				}
+			}
+			if (ret == null) {
+				throw new RuntimeException("Cannot copy EObject " + from);
+			}
+			for (EAttribute attr: from.eClass().getEAllAttributes()) {
+				if (from.eIsSet(attr)) {
+					if (FeatureMapUtil.isMany(from, attr)) {
+						List l = (List)from.eGet(attr);
+						((Collection)ret.eGet(attr)).addAll(l);
+					} else {
+						ret.eSet(attr,from.eGet(attr));
+					}
+				}
+			}
+			for (EReference ref: from.eClass().getEAllReferences()) {
+				if (from.eIsSet(ref)) {
+					if (FeatureMapUtil.isMany(from, ref)) {
+						List l = (List)from.eGet(ref);
+						for (EObject eo: ((Collection<EObject>)ret.eGet(ref))) {
+							l.add(nearCopy(eo, map));
+						};
+					} else {
+						EObject cur = (EObject)from.eGet(ref);
+						if (cur != null) {
+							ret.eSet(ref,nearCopy(cur, map));
+						}
+					}
+				}
+			}
+		}
+		return ret;
 	}
 	
 	public static interface Converter<T,U> {

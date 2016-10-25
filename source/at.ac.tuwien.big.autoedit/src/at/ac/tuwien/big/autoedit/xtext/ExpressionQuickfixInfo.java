@@ -22,13 +22,16 @@ import at.ac.tuwien.big.autoedit.proposal.impl.ProposalImpl;
 import at.ac.tuwien.big.autoedit.proposal.impl.ProposalListImpl;
 import at.ac.tuwien.big.autoedit.search.local.LocalSearchInterface;
 import at.ac.tuwien.big.autoedit.search.local.impl.LocalSearchInterfaceImpl;
+import at.ac.tuwien.big.autoedit.transfer.URIBasedEcoreTransferFunction;
 
 public  class ExpressionQuickfixInfo<T extends Comparable<T>> {
 	private String exprid;
 	private Map<String,ProposalList<T,?>> subIdToChangeMap = new WeakHashMap<>();
+	private DynamicValidatorIFace valid;
 
-	public ExpressionQuickfixInfo(String id) {
+	public ExpressionQuickfixInfo(DynamicValidatorIFace valid, String id) {
 		this.exprid = id;
+		this.valid = valid;
 	}
 	 
 	public synchronized ProposalList<T,?> getChanges(String subId) {
@@ -38,8 +41,15 @@ public  class ExpressionQuickfixInfo<T extends Comparable<T>> {
 	public synchronized List<QuickfixReference> getQuickfix(String subId, String contextUri) {
 		ProposalList<T,?> changes = getChanges(subId);
 		List<QuickfixReference> ret = new ArrayList<QuickfixReference>();
+		
 		for (Proposal<T,?> prop: changes) {
 			Change<?> change = prop.getChange();
+			
+			if (!prop.getChange().forResource().equals(valid.getMainResource())) {
+				URIBasedEcoreTransferFunction tf = new URIBasedEcoreTransferFunction(prop.getChange().forResource(), valid.getMainResource());
+				change = change.transfered(tf);
+			}
+			
 			String str = "";
 			if (prop.getQuality() instanceof Number) {
 				str = Change.costToInvisible(((Number)prop.getQuality()).doubleValue(), false);

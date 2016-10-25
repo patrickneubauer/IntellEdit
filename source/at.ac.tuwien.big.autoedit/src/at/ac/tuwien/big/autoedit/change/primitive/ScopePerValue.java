@@ -6,6 +6,7 @@ import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EStructuralFeature;
 
 import at.ac.tuwien.big.autoedit.scope.ValueScope;
+import at.ac.tuwien.big.autoedit.transfer.EcoreTransferFunction;
 
 public interface ScopePerValue<T> {
 	
@@ -37,6 +38,11 @@ public interface ScopePerValue<T> {
 			@Override
 			public Iterator<T> sample() {
 				return getScope((T)eobj.eGet(feat)).sample();
+			}
+
+			@Override
+			public void transfer(EcoreTransferFunction transferFunc) {
+				getScope((T)eobj.eGet(feat)).transfer(transferFunc);
 			}
 			
 		};

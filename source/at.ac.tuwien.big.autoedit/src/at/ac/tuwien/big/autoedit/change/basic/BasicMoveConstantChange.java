@@ -37,37 +37,54 @@ public class BasicMoveConstantChange extends AbstractFeatureChange<BasicMoveCons
 	
 	@Override
 	public void transfer(EcoreTransferFunction func) {
-		super.transfer(func);
 		targetContainer = (EObject)func.transfer(targetContainer);
+		super.transfer(func);
+	}
+	@Override
+	public void checkChange() {
+		super.checkChange();
+		if (targetContainer.eResource() == null) {
+			throw new RuntimeException();
+		}
 	}
 	
 	@Override
 	public Undoer execute() {
-		costs = 0.0;
-		int inResource = this.forObject().eResource().getContents().indexOf(forObject());
-		EStructuralFeature curContaining = forObject().eContainingFeature();
-		EObject curContainer = forObject().eContainer();
-		if (inResource>= 0) {
-			forObject().eResource().getContents().remove(forObject());
-		}
-		int containerIndex;
-		if (curContainer != null) {
-			containerIndex = MyEcoreUtil.removeValueGetIndex(curContainer, curContaining, forObject());
-		} else {
-			containerIndex = -1;
-		}
-		MyEcoreUtil.addValue(targetContainer, forFeature(), forObject());
-		costs+= costProvider().getFunction(forObject()).getCosts(null, forObject())+
-					costProvider().getFunction(forObject()).getCosts(forObject(),null);
-		return ()->{
-			MyEcoreUtil.removeValue(targetContainer, forFeature(), forObject());
-			if (containerIndex != -1) {
-				MyEcoreUtil.addValue(curContainer, curContaining, containerIndex, forObject());
+		try {
+			costs = 0.0;
+			int inResource = this.forObject().eResource().getContents().indexOf(forObject());
+			EStructuralFeature curContaining = forObject().eContainingFeature();
+			EObject curContainer = forObject().eContainer();
+			if (curContainer != null && curContainer.equals(targetContainer)) {
+				return Undoer.EMPTY;
 			}
-			if (inResource >= 0) {
-				forObject().eResource().getContents().add(inResource,forObject());
+			if (inResource>= 0) {
+				forObject().eResource().getContents().remove(forObject());
 			}
-		};
+			int containerIndex;
+			if (curContainer != null) {
+				containerIndex = MyEcoreUtil.removeValueGetIndex(curContainer, curContaining, forObject());
+			} else {
+				containerIndex = -1;
+			}
+			MyEcoreUtil.addValue(targetContainer, forFeature(), forObject());
+			costs+= costProvider().getFunction(forObject()).getCosts(null, forObject())+
+						costProvider().getFunction(forObject()).getCosts(forObject(),null);
+			
+			return ()->{
+				MyEcoreUtil.removeValue(targetContainer, forFeature(), forObject());
+				if (containerIndex != -1) {
+					MyEcoreUtil.addValue(curContainer, curContaining, containerIndex, forObject());
+				}
+				if (inResource >= 0) {
+					forObject().eResource().getContents().add(inResource,forObject());
+				}
+			};
+		} catch (Exception e) {
+			e.printStackTrace();
+			System.err.println(e.getMessage());
+			return Undoer.EMPTY;
+		}
 	}
 	
 

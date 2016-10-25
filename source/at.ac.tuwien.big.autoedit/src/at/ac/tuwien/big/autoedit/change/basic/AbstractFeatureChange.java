@@ -35,6 +35,19 @@ public abstract class AbstractFeatureChange<FC extends AbstractFeatureChange<FC>
 				
 	}
 	
+
+	@Override
+	public void checkChange() {
+		if (eobj instanceof EObject && ((EObject) eobj).eResource() == null) {
+			throw new RuntimeException();
+		}
+	}
+	
+	@Override
+	public Undoer executeRemoveEmpty() {
+		return execute();
+	}
+	
 	public Resource forResource() {
 		return res;
 	}

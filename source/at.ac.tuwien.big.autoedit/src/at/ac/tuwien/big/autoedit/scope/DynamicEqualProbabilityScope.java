@@ -5,6 +5,8 @@ import java.util.Iterator;
 import java.util.List;
 
 import at.ac.tuwien.big.autoedit.scope.helper.GetFunc;
+import at.ac.tuwien.big.autoedit.transfer.ETransferrable;
+import at.ac.tuwien.big.autoedit.transfer.EcoreTransferFunction;
 
 public class DynamicEqualProbabilityScope<T> implements ValueScope<T,Boolean>{
 	
@@ -45,6 +47,11 @@ public class DynamicEqualProbabilityScope<T> implements ValueScope<T,Boolean>{
 	@Override
 	public Iterator<T> sample() {
 		return new EqualProbabilitySampler<T>(t());
+	}
+
+	@Override
+	public void transfer(EcoreTransferFunction transferFunc) {
+		t = (GetFunc<? extends List<T>>) ETransferrable.transfer(t, transferFunc);
 	}
 
 

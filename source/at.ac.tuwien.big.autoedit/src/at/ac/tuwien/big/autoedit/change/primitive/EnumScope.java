@@ -8,6 +8,7 @@ import org.eclipse.emf.ecore.EEnumLiteral;
 
 import at.ac.tuwien.big.autoedit.scope.RandomSampler;
 import at.ac.tuwien.big.autoedit.scope.ValueScope;
+import at.ac.tuwien.big.autoedit.transfer.EcoreTransferFunction;
 
 public class EnumScope implements ValueScope<EEnumLiteral, Boolean> {
 	
@@ -53,5 +54,8 @@ public class EnumScope implements ValueScope<EEnumLiteral, Boolean> {
 		return new RandomSampler<EEnumLiteral>(value.getELiterals());
 	}
 	
+	@Override
+	public void transfer(EcoreTransferFunction transferFunc) {
+	}
 
 }

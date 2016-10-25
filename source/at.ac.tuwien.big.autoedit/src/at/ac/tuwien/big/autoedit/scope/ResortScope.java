@@ -10,6 +10,8 @@ import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EStructuralFeature;
 import org.eclipse.emf.ecore.resource.Resource;
 
+import at.ac.tuwien.big.autoedit.transfer.EcoreTransferFunction;
+
 
 
 public class ResortScope<Solution, Quality extends Comparable<Quality>> implements ValueScope<Solution, Quality> {
@@ -84,6 +86,11 @@ public class ResortScope<Solution, Quality extends Comparable<Quality>> implemen
 	public Iterator<Solution> sample() {
 		// TODO Implement "intelligent" sampling
 		return base.sample();
+	}
+
+	@Override
+	public void transfer(EcoreTransferFunction transferFunc) {
+		base.transfer(transferFunc);
 	}
 
 }

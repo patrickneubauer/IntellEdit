@@ -44,8 +44,16 @@ public class AddConstantChange extends AbstractFeatureChange<AddConstantChange> 
 	
 	@Override
 	public void transfer(EcoreTransferFunction func) {
-		super.transfer(func);
 		value = func.transfer(value);
+		super.transfer(func);
+	}
+	
+	@Override
+	public void checkChange() {
+		super.checkChange();
+		if (value instanceof EObject && ((EObject) value).eResource() == null) {
+			throw new RuntimeException();
+		}
 	}
 	
 	@Override

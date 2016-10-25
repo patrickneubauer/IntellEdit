@@ -2,6 +2,7 @@ package at.ac.tuwien.big.autoedit.change.composite;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -152,6 +153,26 @@ public class CompositeChangeImpl implements Change<CompositeChangeImpl>{
 		return ListUndoer.from(undoList);
 	}
 
+
+	@Override
+	public Undoer executeRemoveEmpty() {
+		costs = 0.0;
+		List<Undoer> undoList = new ArrayList<Undoer>();
+		Iterator<? extends Change<?>> iter = getSubChanges().iterator();
+		while (iter.hasNext()) {
+			Undoer undoer = iter.next().execute();
+			if (undoer.isEmpty()) {
+				iter.remove();
+			} else {
+				undoList.add(undoer);
+			}
+		}
+		if (undoList.isEmpty()) {
+			return Undoer.EMPTY;
+		}
+		return ListUndoer.from(undoList);
+	}
+	
 	@Override
 	public double getCosts() {
 		return costs;
@@ -176,6 +197,14 @@ public class CompositeChangeImpl implements Change<CompositeChangeImpl>{
 		}
 		return true;
 	}
+
+	@Override
+	public void checkChange() {
+		for (Change<?> sub: getSubChanges()) {
+			sub.checkChange();
+		}
+	}
+
 
 
 }

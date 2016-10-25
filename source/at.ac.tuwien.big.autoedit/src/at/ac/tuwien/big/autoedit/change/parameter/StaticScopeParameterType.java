@@ -8,6 +8,7 @@ import at.ac.tuwien.big.autoedit.change.ParameterType;
 import at.ac.tuwien.big.autoedit.scope.EqualProbabilitySampler;
 import at.ac.tuwien.big.autoedit.scope.EqualProbabilityScope;
 import at.ac.tuwien.big.autoedit.scope.ValueScope;
+import at.ac.tuwien.big.autoedit.transfer.EcoreTransferFunction;
 
 public class StaticScopeParameterType<CT extends ChangeType<CT,?>, PType> implements ParameterType<CT, PType> {
 	
@@ -48,6 +49,11 @@ public class StaticScopeParameterType<CT extends ChangeType<CT,?>, PType> implem
 	@Override
 	public Class<PType> getValueClass() {
 		return clazz;
+	}
+
+	@Override
+	public void transfer(EcoreTransferFunction transferFunc) {
+		scope.transfer(transferFunc);
 	}
 
 

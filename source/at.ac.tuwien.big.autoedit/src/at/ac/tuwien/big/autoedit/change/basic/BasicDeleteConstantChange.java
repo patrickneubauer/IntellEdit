@@ -41,11 +41,20 @@ public class BasicDeleteConstantChange extends AbstractFeatureChange<BasicDelete
 	
 	@Override
 	public void transfer(EcoreTransferFunction func) {
-		super.transfer(func);
 		Object oldValue = value;
 		value = func.transfer(value);
 		if (value == null && oldValue != null) {
 			System.out.println("Value now null!! from "+oldValue);
+		}
+		super.transfer(func);
+	}
+	
+
+	@Override
+	public void checkChange() {
+		super.checkChange();
+		if (value instanceof EObject && ((EObject) value).eResource() == null) {
+			throw new RuntimeException();
 		}
 	}
 	
@@ -54,7 +63,7 @@ public class BasicDeleteConstantChange extends AbstractFeatureChange<BasicDelete
 	@Override
 	public Undoer execute() {
 		if (forObject() == null) {
-			return ()->{};
+			return Undoer.EMPTY;
 		}
 		costs = 0.0;
 		if (forFeature() instanceof EReference) {
@@ -62,30 +71,50 @@ public class BasicDeleteConstantChange extends AbstractFeatureChange<BasicDelete
 			if (ref.isContainment()) {
 				//Delete instead
 				List<Undoer> allUndoers = new ArrayList<Undoer>();
-				Collection col = new ArrayList<>(MyEcoreUtil.getAsCollection(forObject(), ref));
-				for (Object o: col) {
-					if (o == null) {continue;}
-					DeleteObjectChange doc = new DeleteObjectChange((EObject)o,forResource());
-					
-					allUndoers.add(doc.execute());
-					costs+= doc.getCosts();
-				}
-				return ()->{
-					for (int i = allUndoers.size()-1; i >= 0; --i) {
+				try {
+					Collection col = new ArrayList<>(MyEcoreUtil.getAsCollection(forObject(), ref));
+					for (Object o: col) {
+						if (o == null) {continue;}
+						DeleteObjectChange doc = new DeleteObjectChange((EObject)o,forResource());
+						
+						allUndoers.add(doc.execute());
+						costs+= doc.getCosts();
+					}
+					if (allUndoers.isEmpty()) {
+						return Undoer.EMPTY;
+					}
+					return ()->{
+						for (int i = allUndoers.size()-1; i >= 0; --i) {
+							allUndoers.get(i).undo();
+						}
+					};
+				} catch (Exception e) {
+					e.printStackTrace();
+					System.err.println(e.getMessage());
+					for (int i = allUndoers.size()-1; i >= 0; --i){
 						allUndoers.get(i).undo();
 					}
-				};
+					return Undoer.EMPTY;
+				}
 			}
 			
 		}
-		
-		costs = costProvider().getFunction(value).getCosts(value, null);
-		int index = MyEcoreUtil.removeValueGetIndex(forObject(), forFeature(), value);
-		return ()->{
-			if (index != -1) {
-				MyEcoreUtil.addValue(forObject(), forFeature(), index, value);
+		try {
+			costs = costProvider().getFunction(value).getCosts(value, null);
+			int index = MyEcoreUtil.removeValueGetIndex(forObject(), forFeature(), value);
+			if (index == -1) {
+				return Undoer.EMPTY;
 			}
-		};
+			return ()->{
+				if (index != -1) {
+					MyEcoreUtil.addValue(forObject(), forFeature(), index, value);
+				}
+			};
+		} catch (Exception e) {
+			e.printStackTrace();
+			System.err.println(e.getMessage());
+			return Undoer.EMPTY;
+		}
 	}
 
 	@Override

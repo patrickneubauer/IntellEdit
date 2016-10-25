@@ -20,8 +20,8 @@ public class MOEAChangeVariable implements Variable {
 	private ChangeType<?, ?> curChangeType;
 	private Iterator<?> sampler;
 	private Change<?> curChange;
-	private DynamicValidatorIFace changeProvider;
 	private Random random = new Random();
+	private GlobalSearch search;
 	
 	public boolean equals(Object o) {
 		if (o instanceof MOEAChangeVariable) {
@@ -30,13 +30,13 @@ public class MOEAChangeVariable implements Variable {
 		return false;
 	}
 	
-	public MOEAChangeVariable(DynamicValidatorIFace validator) {
-		this.changeProvider = validator;
+	public MOEAChangeVariable(GlobalSearch search) {
+		this.search = search;
 		randomize();
 	}
 	
-	public MOEAChangeVariable(DynamicValidatorIFace changeProvider, ChangeType<?,?> curChangeType, Change<?> curChange) {
-		this.changeProvider = changeProvider;
+	public MOEAChangeVariable(GlobalSearch search, ChangeType<?,?> curChangeType, Change<?> curChange) {
+		this.search = search;
 		this.curChangeType = curChangeType;
 		this.curChange = curChange;
 		this.sampler = (curChangeType!=null)?curChangeType.sampleWithMissing():null;
@@ -45,7 +45,11 @@ public class MOEAChangeVariable implements Variable {
 
 	@Override
 	public Variable copy() {
-		return new MOEAChangeVariable(changeProvider, curChangeType, (curChange==null)?null:curChange.clone());
+		MOEAChangeVariable ret = new MOEAChangeVariable(search, curChangeType, (curChange==null)?null:curChange.clone());
+		if (ret.getCurChange() != null) {
+			ret.getCurChange().checkChange();
+		}
+		return ret;
 	}
 
 	@Override
@@ -66,21 +70,22 @@ public class MOEAChangeVariable implements Variable {
 			sampler = null;
 			if (random.nextBoolean()) {
 				//It is an already existing quickfix
-				curChange = changeProvider.randomQuickfix(random);
+				curChange = search.randomQuickfix(random);
 			} 
 			//Just a random change
 			if (curChange == null) {
 				if (tf == null) {
-					curChangeType = changeProvider.randomChange(random);
+					curChangeType = MyResource.get(search.getResource()).randomChange(random);
 				} else {
-					curChangeType = MyResource.get(tf.forwardResource()).randomChange(random);
-					curChangeType.transfer(tf.inverse());
+					curChangeType = MyResource.get(search.getResource()).randomChange(random);
+					/*curChangeType = MyResource.get(tf.forwardResource()).randomChange(random);
+					curChangeType.transfer(tf.inverse());*/
 				}
 				curChange = curChangeType.compileWithMissing();
 				sampler = curChangeType.sampleWithMissing();
 			}
 			if (curChange == null) {
-				curChange = Change.empty(changeProvider.getResource());
+				curChange = Change.empty(search.getResource());
 			}
 		}
 	}

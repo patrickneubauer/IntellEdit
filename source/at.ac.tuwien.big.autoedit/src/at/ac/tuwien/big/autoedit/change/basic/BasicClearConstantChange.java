@@ -44,25 +44,37 @@ public class BasicClearConstantChange extends AbstractFeatureChange<BasicClearCo
 	public Undoer execute() {
 		costs = 0.0;
 		if (forObject() == null) {
-			return ()->{};
+			return Undoer.EMPTY;
+		}
+		Collection col = MyEcoreUtil.getAsCollection(forObject(), forFeature());
+		if (col.isEmpty()) {
+			return Undoer.EMPTY;
 		}
 		if (forFeature() instanceof EReference) {
 			EReference ref = (EReference)forFeature();
 			if (ref.isContainment()) {
 				//Delete instead
 				List<Undoer> allUndoers = new ArrayList<Undoer>();
-				Collection col = new ArrayList<>(MyEcoreUtil.getAsCollection(forObject(), ref));
-				for (Object o: col) {
-					if (o == null) {continue;}
-					DeleteObjectChange doc = new DeleteObjectChange((EObject)o,forResource());
-					costs+= doc.getCosts();
-					allUndoers.add(doc.execute());
-				}
-				return ()->{
+				try {
+					for (Object o: new ArrayList<>(col)) {
+						if (o == null) {continue;}
+						DeleteObjectChange doc = new DeleteObjectChange((EObject)o,forResource());
+						costs+= doc.getCosts();
+						allUndoers.add(doc.execute());
+					}
+					return ()->{
+						for (int i = allUndoers.size()-1; i >= 0; --i) {
+							allUndoers.get(i).undo();
+						}
+					};
+				} catch (Exception e) {
+					e.printStackTrace();
+					System.err.println(e.getMessage());
 					for (int i = allUndoers.size()-1; i >= 0; --i) {
 						allUndoers.get(i).undo();
 					}
-				};
+					return Undoer.EMPTY;
+				}
 			}
 			
 		}
@@ -116,7 +128,7 @@ public class BasicClearConstantChange extends AbstractFeatureChange<BasicClearCo
 					forObject().eSet(forFeature(), cur);
 				};
 			} else {
-				return ()->{};
+				return Undoer.EMPTY;
 			}
 		}
 		

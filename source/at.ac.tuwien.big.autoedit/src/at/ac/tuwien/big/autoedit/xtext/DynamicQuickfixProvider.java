@@ -123,7 +123,9 @@ public class DynamicQuickfixProvider extends org.eclipse.xtext.ui.editor.quickfi
 			} else {
 				//Update
 				if (original.getLines().size() != revised.getLines().size()) {
-					throw new RuntimeException("Expectation violated!");
+					System.err.println("Expectation violated!");
+					doc.set(os);
+					return;
 				}
 				for (int i = 0; i < original.getLines().size(); ++i) {
 					List<Character> start = asList((String)original.getLines().get(i));
@@ -204,6 +206,7 @@ public class DynamicQuickfixProvider extends org.eclipse.xtext.ui.editor.quickfi
 		List<IssueResolution> resList = new ArrayList<IssueResolution>(curQuickfixes.size());
 		boolean displayed = false;
 		for (QuickfixReference ref: curQuickfixes) {
+			
 			displayed = true;
 			if (validator.displayedReferences().put(ref, true) != null) {
 				continue;

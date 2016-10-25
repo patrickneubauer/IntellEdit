@@ -3,6 +3,7 @@ package at.ac.tuwien.big.autoedit.xtext;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -24,7 +25,7 @@ import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EPackage;
 import org.eclipse.emf.ecore.EStructuralFeature;
 import org.eclipse.emf.ecore.resource.Resource;
-
+import org.eclipse.xtext.resource.XtextResource;
 import org.eclipse.xtext.validation.Check;
 import org.eclipse.xtext.validation.CheckType;
 import org.eclipse.xtext.validation.EValidatorRegistrar;
@@ -69,6 +70,8 @@ public class DynamicValidator extends org.eclipse.xtext.validation.AbstractDecla
 	
 	private static final long MIN_MS_BETWEEN_QUICKFIX_CALLS = 500;
 	
+	public static final boolean PREFILTER_CHANGES = true;
+	
 	private WeakHashMap<Issue,Boolean> allIssues = new WeakHashMap<>();
 	private WeakHashMap<QuickfixReference,Boolean> displayedReferences = new WeakHashMap<QuickfixReference,Boolean>();
 	private GlobalSearch search;
@@ -103,7 +106,8 @@ public class DynamicValidator extends org.eclipse.xtext.validation.AbstractDecla
 	}
 	
 	public final PriorityQueue<SearchTask> searchTask = new PriorityQueue<SearchTask>();
-	private Resource curResource;
+	private MyResource curResource;
+	private Resource mainResource;
 	
 	final Runnable taskRunnable = ()->{
 		for(;;) {
@@ -121,7 +125,7 @@ public class DynamicValidator extends org.eclipse.xtext.validation.AbstractDecla
 				}
 				task = pollTask();
 			}
-			if (!task.isFinished() && !task.isObsolete(curResource)) {
+			if (!task.isFinished() && !task.isObsolete(curResource.getResource())) {
 				task.run();
 				pushTask(task);
 			}
@@ -189,7 +193,7 @@ public class DynamicValidator extends org.eclipse.xtext.validation.AbstractDecla
 	public ExpressionQuickfixInfo getQuickfixes(String string) {
 		ExpressionQuickfixInfo ret = storedQuickfixes.get(string);
 		if (ret == null) {
-			storedQuickfixes.put(string, ret = new ExpressionQuickfixInfo(string));
+			storedQuickfixes.put(string, ret = new ExpressionQuickfixInfo(this,string));
 		}
 		return ret;
 	}
@@ -198,7 +202,7 @@ public class DynamicValidator extends org.eclipse.xtext.validation.AbstractDecla
 		ExpressionQuickfixInfo ret;
 		
 		ExpressionQuickfixInfo old = 
-				storedQuickfixes.put(string, ret = new ExpressionQuickfixInfo(string));
+				storedQuickfixes.put(string, ret = new ExpressionQuickfixInfo(this,string));
 		/*if (old != null) {
 			old.clear();
 		}*/
@@ -219,14 +223,19 @@ public class DynamicValidator extends org.eclipse.xtext.validation.AbstractDecla
 	
 	private List<Proposal<?, ?>> paretoFront = new ArrayList<Proposal<?,?>>();
 	private boolean haveChecked = false;
+	private boolean haveSaved = false;
 	
 	@Check(CheckType.FAST)
 	public synchronized void resetGenetic(EObject theObj) {
 		haveChecked = true;
+		if (!haveSaved) {
+			return;
+		}
 
 		if (theObj.eContainer() == null) {
 			if (theObj != null && theObj.eResource() != null) {
-				curResource = theObj.eResource();
+				curResource = MyResource.get(theObj.eResource()).clone();
+				mainResource = theObj.eResource();
 			}
 
 				if (search == null && curResource != null) {
@@ -235,6 +244,10 @@ public class DynamicValidator extends org.eclipse.xtext.validation.AbstractDecla
 						@Override
 						public Proposal<?, ?> add(Change<?> original, Change<?> processed, double[] evals) {
 							if (search == null) {
+								return null;
+							}
+
+							if (GlobalSearch.FILTER_GRAMMAR_ERROR && evals[ViolatedConstraintsEvaluator.GRAMMAR_ERRORS] > 0.0) {
 								return null;
 							}
 							double curCosts = evals[1];
@@ -249,12 +262,15 @@ public class DynamicValidator extends org.eclipse.xtext.validation.AbstractDecla
 							Evaluation wrapper = new Evaluation();
 							for (Proposal<?, ?> curP: curList) {
 								if (curP.getCosts() <= curCosts && (Double)curP.getQuality() >= -localErrorRemaining && curP.getCurQuality() >= fixedConstraints) {
-									if (!curP.getChange().forResource().equals(curResource)) {
-										curP.getChange().transfer(new URIBasedEcoreTransferFunction(curP.getChange().forResource(), curResource));
-									}
 									EcoreTransferFunction etf = cont.pullResource();
+									if (!curP.getChange().forResource().equals(etf.backResource())) {
+										curP.getChange().transfer(new URIBasedEcoreTransferFunction(curP.getChange().forResource(), etf.backResource()));
+									}
 									//-violated constraints currently, costs, resolved constraints, removed violations, removed fulfilled, added constraints, added fulfilled, invalidated constraints
 									double[] costs = new ViolatedConstraintsEvaluator().evaluate(curP.getChange().transfered(etf), wrapper);
+									if (GlobalSearch.FILTER_GRAMMAR_ERROR && costs[ViolatedConstraintsEvaluator.GRAMMAR_ERRORS] > 0.0) {
+										continue;
+									}
 									cont.pushResource(etf);
 									curP.setCurQuality(costs[2]);
 									((Proposal<Double,?>)curP).setQuality(costs[0]);
@@ -264,12 +280,19 @@ public class DynamicValidator extends org.eclipse.xtext.validation.AbstractDecla
 									}
 								}
 							}
+							
+
+							if (mainResource instanceof XtextResource && DynamicValidator.PREFILTER_CHANGES && !original.canBeQuickfixApplied(((XtextResource)mainResource).getSerializer())) {
+								return null;
+							}
 							//It is in the pareto-set
 							ProposalImpl ret = new ProposalImpl<>(processed);
 							
 							ret.setCosts(curCosts);
 							ret.setCurQuality(fixedConstraints);
 							ret.setQuality(-localErrorRemaining);
+							
+							
 	
 							synchronized (paretoFront) {
 								paretoFront.removeIf((x)->(x.getCosts()>=curCosts && x.getCurQuality() <= -localErrorRemaining && (Double)x.getQuality() <= fixedConstraints));
@@ -293,6 +316,34 @@ public class DynamicValidator extends org.eclipse.xtext.validation.AbstractDecla
 			String idStr = "GENETIC_"+advanceId();
 			ExpressionQuickfixInfo quickfixes = getQuickfixes(idStr);
 			
+			
+			
+			Evaluation wrapper = new Evaluation();
+			for (Proposal<?, ?> curP: curList) {
+				
+				
+				EcoreTransferFunction etf = search.getContainer().pullResource();
+				if (!curP.getChange().forResource().equals(etf.backResource())) {
+					EcoreTransferFunction trf = new URIBasedEcoreTransferFunction(curP.getChange().forResource(), etf.backResource());
+					curP.getChange().transfer(trf);
+				}
+				
+				//-violated constraints currently, costs, resolved constraints, removed violations, removed fulfilled, added constraints, added fulfilled, invalidated constraints
+				curP.getChange().checkChange();
+				Change<?> transfered = curP.getChange().transfered(etf);
+				double[] costs = new ViolatedConstraintsEvaluator().evaluate(transfered, wrapper);
+			
+				search.getContainer().pushResource(etf);
+				curP.setCurQuality(costs[2]);
+				((Proposal<Double,?>)curP).setQuality(costs[0]);
+				curP.setCosts(costs[1]);
+			}
+			
+			curList.removeIf((x)->x.getCurQuality()<= 0);
+			synchronized (paretoFront) {
+				paretoFront.removeIf((x)->x.getCurQuality()<= 0);
+			}
+			
 		
 			int ind = 0;
 			for (Proposal<?, ?> curP: curList) {
@@ -307,19 +358,17 @@ public class DynamicValidator extends org.eclipse.xtext.validation.AbstractDecla
 				
 				
 				for (FixAttemptReference ref: curP.getChange().getFixReferences()) {
-					EObject eobj = trf.forward(ref.forObject());
+					EObject eobj = ref.forObject();
 					if (eobj == null) {continue;}
-					if (eobj.eResource() != curResource) {
-						System.err.println("Wrong resource ...");
-						continue;
-					}
+					URIBasedEcoreTransferFunction utf = new URIBasedEcoreTransferFunction(eobj.eResource(), mainResource);
+					EObject displayForObj = utf.forward(eobj);
 					if (ref instanceof FixAttemptFeatureReference) {
 						FixAttemptFeatureReference fref = (FixAttemptFeatureReference)ref;
 						info("Possible improvement: "+-curP.getCurQuality()+" Constraints violated, "+curP.getCosts()+" costs",
-								eobj,fref.getFeature(),fref.getValueIndex(),"DYNISSUE_ANY_GENETIC_"+indexStr,validatorId,idStr,indexStr);
+								displayForObj,fref.getFeature(),fref.getValueIndex(),"DYNISSUE_ANY_GENETIC_"+indexStr,validatorId,idStr,indexStr);
 					} else {
 						info("Possible improvement: "+-curP.getCurQuality()+" Constraints violated, "+curP.getCosts()+" costs",
-								eobj,null,"DYNISSUE_ANY_GENETIC_"+indexStr,validatorId,idStr,indexStr);
+								displayForObj,null,"DYNISSUE_ANY_GENETIC_"+indexStr,validatorId,idStr,indexStr);
 					}
 				}
 				++ind;
@@ -329,9 +378,10 @@ public class DynamicValidator extends org.eclipse.xtext.validation.AbstractDecla
 	}
 	
 	@Check(CheckType.NORMAL)
-	public synchronized void checkAllExpressions(EObject theObj) {
+	public synchronized void checkAllExpressions(EObject theRealObj) {
+		
 		long myIdU = uniqueÍd;
-		if (theObj.eContainer() == null) {
+		if (theRealObj.eContainer() == null) {
 			synchronized (this) {
 				++uniqueÍd;
 				myIdU = uniqueÍd; 
@@ -339,12 +389,17 @@ public class DynamicValidator extends org.eclipse.xtext.validation.AbstractDecla
 			
 		}
 		long myId = myIdU;
-		Resource xmiRes = theObj.eResource();
+		Resource xmiRes = theRealObj.eResource();
 		if (xmiRes == null) {
 			throw new RuntimeException("Validating object without resource!");
 		}
-		curResource = xmiRes;
-		MyResource myres = MyResource.get(xmiRes);
+		MyResource myresu = curResource;
+		if (mainResource != xmiRes || theRealObj.eContainer() == null) {
+			mainResource = xmiRes;
+			myresu = curResource = MyResource.get(xmiRes).clone();
+		}
+		
+		final MyResource myres = myresu;
 		
 		
 		
@@ -352,8 +407,13 @@ public class DynamicValidator extends org.eclipse.xtext.validation.AbstractDecla
 		
 		
 
-		String myFragment = xmiRes.getURIFragment(theObj);
+		String myFragment = xmiRes.getURIFragment(theRealObj);
 		
+		URIBasedEcoreTransferFunction utf = new URIBasedEcoreTransferFunction(xmiRes, curResource);
+		
+		EObject theObj = utf.forward(theRealObj);
+		
+		try {
 		
 		evalMan.performTypicalEvaluation(myres, theObj, new EvaluationCallback() {
 
@@ -396,6 +456,8 @@ public class DynamicValidator extends org.eclipse.xtext.validation.AbstractDecla
 					refToId.put(ref,idStr);
 					idToRef.put(idStr,ref);
 					EObject obj = ref.forObject();
+					URIBasedEcoreTransferFunction utf = new URIBasedEcoreTransferFunction(curResource, mainResource);
+					EObject displayForObject = utf.forward(obj);
 					if (!fileCheck) {
 						if (obj != null && obj.eResource() != theObj.eResource()) {
 							if (!otherIssueDesc.isEmpty()) {
@@ -405,30 +467,30 @@ public class DynamicValidator extends org.eclipse.xtext.validation.AbstractDecla
 						} else {
 							if (ref instanceof FixAttemptFeatureReference) {
 								FixAttemptFeatureReference fref = (FixAttemptFeatureReference)ref;
-								error(issueDescr.toString(), ref.forObject(), fref.getFeature(), fref.getValueIndex(), "DYNISSUE_ANY_"+evalIdBase+idStr, validatorId,
+								error(issueDescr.toString(), displayForObject, fref.getFeature(), fref.getValueIndex(), "DYNISSUE_ANY_"+evalIdBase+idStr, validatorId,
 										evalIdBase,idStr);
 							} else {
 								boolean ok = false;
 								EAttribute idAttr = null;
 								if (!ref.isCompleteObject()) {
-									idAttr = ref.forObject().eClass().getEIDAttribute();
+									idAttr = displayForObject.eClass().getEIDAttribute();
 									if (idAttr == null)  {
-										EStructuralFeature esf = ref.forObject().eClass().getEStructuralFeature("name");
+										EStructuralFeature esf = displayForObject.eClass().getEStructuralFeature("name");
 										if (esf instanceof EAttribute) {
 											idAttr = (EAttribute)esf;
 										}
 									}
 								}
 								if (idAttr != null) {
-									Collection col = MyEcoreUtil.getAsCollection(ref.forObject(), idAttr);
+									Collection col = MyEcoreUtil.getAsCollection(displayForObject, idAttr);
 									if (!col.isEmpty()) {
 										ok = true;
-										error(issueDescr.toString(), ref.forObject(), idAttr, -1, "DYNISSUE_ANY_"+evalIdBase+idStr, validatorId,
+										error(issueDescr.toString(), displayForObject, idAttr, -1, "DYNISSUE_ANY_"+evalIdBase+idStr, validatorId,
 												evalIdBase,idStr);
 									}
 								}
 								if (!ok) {
-									error(issueDescr.toString(), ref.forObject(), null, -1, "DYNISSUE_ANY_"+evalIdBase+idStr, validatorId,
+									error(issueDescr.toString(), displayForObject, null, -1, "DYNISSUE_ANY_"+evalIdBase+idStr, validatorId,
 										evalIdBase,idStr);
 								}
 							}
@@ -446,10 +508,22 @@ public class DynamicValidator extends org.eclipse.xtext.validation.AbstractDecla
 				final SimpleStream<Change<?>>  stream = SimpleStream.getStream((oc,nc,evals)
 						->{
 							//Evaluate old change - this is applied already in this moment!
+							EcoreTransferFunction cf = oc.forMyResource().cloneFunc();
 							double[] changeEvals = evaluator.evaluate(oc, new Evaluation());
+							if (!oc.forMyResource().equalsTarget(cf)) {
+								System.err.println("Error in my change!");
+							}
 							double changeEval = changeEvals[0];
 							double resolved = changeEvals[2];
 							double costs = changeEvals[1];
+							if (GlobalSearch.FILTER_GRAMMAR_ERROR && changeEvals[ViolatedConstraintsEvaluator.GRAMMAR_ERRORS] > 0.0) {
+								return null;
+							}
+							
+							if (mainResource instanceof XtextResource && DynamicValidator.PREFILTER_CHANGES && !oc.canBeQuickfixApplied(((XtextResource)mainResource).getSerializer())) {
+								return null;
+							}
+							
 							//TODO: ...
 							
 							Map<FixAttemptReference, String> bpMap = refToId;
@@ -457,9 +531,9 @@ public class DynamicValidator extends org.eclipse.xtext.validation.AbstractDecla
 								oldInfo.clear(); //TOOD: ...
 							}*/
 							boolean addBasicId = true;
-							Collection<Change<?>>[] curChange = quickfixChanges.get(curResource);
+							Collection<Change<?>>[] curChange = quickfixChanges.get(curResource.getResource());
 							if (curChange == null) {
-								quickfixChanges.put(curResource, curChange = new Collection[]{new HashSet<Change<?>>(), new ArrayList<Change<?>>()});
+								quickfixChanges.put(curResource.getResource(), curChange = new Collection[]{new HashSet<Change<?>>(), new ArrayList<Change<?>>()});
 							}
 							if (curChange[0].add(nc)) {
 								curChange[1].add(nc);
@@ -513,6 +587,11 @@ public class DynamicValidator extends org.eclipse.xtext.validation.AbstractDecla
 			}
 
 		});
+		} catch (Exception e) {
+			String str = Arrays.toString(e.getStackTrace()).replace(",","\n");
+			System.out.println(str);
+		}
+		haveSaved = true;
 	}
 	
     
@@ -521,8 +600,12 @@ public class DynamicValidator extends org.eclipse.xtext.validation.AbstractDecla
 		System.out.println("Quickfixes should be refreshed!");
 	}
 
-	public Resource getResource() {
+	public MyResource getResource() {
 		return curResource;
+	}
+	
+	public Resource getMainResource() {
+		return mainResource;
 	}
 	
 	public void setFileCheck(boolean fileCheck) {
@@ -532,7 +615,8 @@ public class DynamicValidator extends org.eclipse.xtext.validation.AbstractDecla
 	public synchronized void checkFile(Resource res) {
 		boolean oldFileCheck = fileCheck;
 		fileCheck = true;
-		curResource = res;
+		mainResource = res;
+		curResource = MyResource.get(res).clone();
 		for (EObject eobj: (Iterable<EObject>)()->res.getAllContents()) {
 			if (eobj == null || eobj.eClass() == null) {continue;}
 			checkAllExpressions(eobj);
@@ -549,7 +633,7 @@ public class DynamicValidator extends org.eclipse.xtext.validation.AbstractDecla
 	}
 
 	public ChangeType<?,?> randomChange(Random random) {
-		return MyResource.get(curResource).randomChange(random);
+		return curResource.randomChange(random);
 	}
 
 	public void abort() {

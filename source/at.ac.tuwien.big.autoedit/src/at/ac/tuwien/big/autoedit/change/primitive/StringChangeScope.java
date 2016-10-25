@@ -12,6 +12,7 @@ import java.util.WeakHashMap;
 
 import at.ac.tuwien.big.autoedit.scope.RandomSampler;
 import at.ac.tuwien.big.autoedit.scope.ValueScope;
+import at.ac.tuwien.big.autoedit.transfer.EcoreTransferFunction;
 
 /**Contains all strings with difference 1*/
 public class StringChangeScope implements ValueScope<String, Boolean> {
@@ -233,6 +234,10 @@ public class StringChangeScope implements ValueScope<String, Boolean> {
 				return getIndexed(random.nextInt(maxIndex));
 			}
 		};
+	}
+	
+	@Override
+	public void transfer(EcoreTransferFunction transferFunc) {
 	}
 
 }

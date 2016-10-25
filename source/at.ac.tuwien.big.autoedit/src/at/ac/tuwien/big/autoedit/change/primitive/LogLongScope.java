@@ -11,6 +11,7 @@ import java.util.Random;
 import java.util.TreeMap;
 
 import at.ac.tuwien.big.autoedit.scope.ValueScope;
+import at.ac.tuwien.big.autoedit.transfer.EcoreTransferFunction;
 
 public class LogLongScope implements ValueScope<Long, Boolean>{
 
@@ -147,4 +148,7 @@ public class LogLongScope implements ValueScope<Long, Boolean>{
 		}
 	}
 
+	@Override
+	public void transfer(EcoreTransferFunction transferFunc) {
+	}
 }

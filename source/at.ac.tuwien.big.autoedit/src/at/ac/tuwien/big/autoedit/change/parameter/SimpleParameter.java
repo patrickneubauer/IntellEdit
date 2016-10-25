@@ -3,6 +3,7 @@ package at.ac.tuwien.big.autoedit.change.parameter;
 import at.ac.tuwien.big.autoedit.change.ChangeType;
 import at.ac.tuwien.big.autoedit.change.Parameter;
 import at.ac.tuwien.big.autoedit.change.ParameterType;
+import at.ac.tuwien.big.autoedit.transfer.EcoreTransferFunction;
 
 public class SimpleParameter<CT extends ChangeType<CT,?>, PType> implements Parameter<CT, PType> {
 	
@@ -42,6 +43,11 @@ public class SimpleParameter<CT extends ChangeType<CT,?>, PType> implements Para
 	
 	public void setIndex(int index) {
 		this.index = index;
+	}
+
+	@Override
+	public void transfer(EcoreTransferFunction transferFunc) {
+		type.transfer(transferFunc);
 	}
 
 }

@@ -34,6 +34,8 @@ import org.eclipse.emf.ecore.util.EcoreUtil.Copier;
 import org.eclipse.ocl.ecore.OCL;
 import org.eclipse.ocl.ecore.OCLExpression;
 import org.eclipse.ocl.expressions.OperationCallExp;
+import org.eclipse.xtext.EcoreUtil2;
+import org.eclipse.xtext.resource.XtextResource;
 import org.eclipse.ocl.ecore.OCL.Helper;
 
 import at.ac.tuwien.big.autoedit.change.ChangeType;
@@ -67,6 +69,7 @@ import at.ac.tuwien.big.autoedit.scope.Scope;
 import at.ac.tuwien.big.autoedit.scope.ValueScope;
 import at.ac.tuwien.big.autoedit.scope.helper.EvalFunc;
 import at.ac.tuwien.big.autoedit.test.OclExtractor;
+import at.ac.tuwien.big.autoedit.transfer.EcoreMapTransferFunction;
 import at.ac.tuwien.big.autoedit.transfer.EcoreTransferFunction;
 import at.tuwien.big.virtmod.datatype.IteratorUtils;
 
@@ -105,15 +108,21 @@ public class MyResource {
 	
 	
 	private void calcFeatures(Resource res) {
-		feat = new ArrayList<EStructuralFeature>();
-		clsl = new ArrayList<>();
-		TreeIterator<EObject> iter = res.getAllContents();
-		while (iter.hasNext()) {
-			EObject next = iter.next();
-			if (next instanceof EClass) {
-				EClass storedClass = (EClass)next;
-				clsl.add(storedClass);
-				feat.addAll(storedClass.getEStructuralFeatures());
+		synchronized(res) { 
+			feat = new ArrayList<EStructuralFeature>();
+			clsl = new ArrayList<>();
+			TreeIterator<EObject> iter = res.getAllContents();
+			while (iter.hasNext()) {
+				EObject next = iter.next();
+				if (next instanceof EClass) {
+					
+					EClass storedClass = (EClass)next;
+					clsl.add(storedClass);
+					feat.addAll(storedClass.getEStructuralFeatures());
+					if (feat.contains(null)) {
+						System.out.println("Why does an EClass contain null feature?!");
+					}
+				}
 			}
 		}
 	}
@@ -122,41 +131,43 @@ public class MyResource {
 		calcFeatures(ecoreRes);
 	}
 	
-	public List<EStructuralFeature> getAllFeatures() {
+	public synchronized List<EStructuralFeature> getAllFeatures() {
 		if (feat == null) {
-			List<EObject> allInst = getAllInstances(null);
-			for (EObject obj: allInst) {
-				if (obj.eClass() != null) {
-					EClass cl = obj.eClass();
-					calcFeatures(cl.eResource());
-					return feat;
+				List<EObject> allInst = getAllInstances(null);
+				for (EObject obj: allInst) {
+					if (obj.eClass() != null) {
+						EClass cl = obj.eClass();
+						calcFeatures(cl.eResource());
+						return feat;
+					}
 				}
-			}
-			System.err.println("Have no (suitable?) available object ...");
-			return Collections.emptyList();
+				System.err.println("Have no (suitable?) available object ...");
+				return Collections.emptyList();
 			
 		}
 		return feat;
 	}
 	
-	public List<EClass> getAllClasses() {
+	public synchronized  List<EClass> getAllClasses() {
 		if (clsl == null) {
-			List<EObject> allInst = getAllInstances(null);
-			for (EObject obj: allInst) {
-				if (obj.eClass() != null) {
-					EClass cl = obj.eClass();
-					calcFeatures(cl.eResource());
-					return clsl ;
+			synchronized(this) {
+				List<EObject> allInst = getAllInstances(null);
+				for (EObject obj: allInst) {
+					if (obj.eClass() != null) {
+						EClass cl = obj.eClass();
+						calcFeatures(cl.eResource());
+						return clsl ;
+					}
 				}
+				System.err.println("Have no (suitable?) available object ...");
+				return Collections.emptyList();
 			}
-			System.err.println("Have no (suitable?) available object ...");
-			return Collections.emptyList();
 			
 		}
 		return clsl ;
 	}
 	
-	public void objectRemoved(EObject eobj) {
+	public synchronized  void objectRemoved(EObject eobj) {
 		if (evalFunc == null) {
 			return;
 		}
@@ -173,7 +184,7 @@ public class MyResource {
 		allObjs.remove(eobj);
 	}
 	
-	public void objectAdded(EObject eobj) {
+	public synchronized  void objectAdded(EObject eobj) {
 		if (evalFunc == null) {
 			return;
 		}
@@ -195,14 +206,14 @@ public class MyResource {
 		
 	}
 	
-	public List<EObject> getAllInstances(EClass forClass) {
+	public synchronized List<EObject> getAllInstances(EClass forClass) {
 		return getClassInstanceFunc().eval(forClass);
 	}
 	
 	private Map<EClass, List<EObject>> allGenerated = new HashMap<EClass, List<EObject>>();
 
 
-	public EObject createInstance(EClass targetType) {
+	public synchronized EObject createInstance(EClass targetType) {
 		EcoreFactory fact = EcoreFactory.eINSTANCE;
 		EObject eobj = null;
 		if (targetType.getInstanceClass() != null) {
@@ -515,6 +526,7 @@ public class MyResource {
 	}
 	
 	public synchronized EcoreInfo getOrBuildEcoreInfo(Resource res) {
+		synchronized(res) {
 		EcoreInfo ecoreInfo = instancibleTypesMap.get(res);;
 		if (ecoreInfo == null) {
 			instancibleTypesMap.put(res, ecoreInfo = new EcoreInfo());
@@ -596,6 +608,7 @@ public class MyResource {
 			}
 		}
 		return ecoreInfo;
+		}
 	}
 	
 	/*
@@ -776,11 +789,16 @@ public class MyResource {
 		return new StaticScopeParameterType(targetClass, scope);
 	}
 
+	public MyResource clone() {
+		return clone(new EcoreUtil.Copier());
+	}
+	
 	public MyResource clone(Copier copier) {
 		Resource newResource = new ResourceImpl();
-		for (EObject eobj: (Iterable<EObject>)()->res.getAllContents()) {
+		newResource.setURI(res.getURI());
+		/*for (EObject eobj: (Iterable<EObject>)()->res.getAllContents()) {
 			copier.copy(eobj);
-		}
+		}*/
 		newResource.getContents().addAll(copier.copyAll(res.getContents()));
 		copier.copyReferences();
 		MyResource ret = MyResource.get(newResource);
@@ -907,6 +925,9 @@ public class MyResource {
 		if (from.eClass() != to.eClass()) {
 			return false;
 		}
+		if (from.eResource() != etf.backResource() || to.eResource() != etf.forwardResource()) {
+			return false;
+		}
 		EClass cl = from.eClass();
 		for (EStructuralFeature ref: cl.getEAllStructuralFeatures()) {
 			Collection srccol = MyEcoreUtil.getAsCollection(from,ref);
@@ -924,7 +945,14 @@ public class MyResource {
 				Object target = trgiter.next();
 				if (first instanceof EObject) {
 					if (target != etf.forward((EObject)first)) {
+						etf.forward((EObject)first);
+						etf.forward((EObject)first);
 						return false;
+					}
+					if (ref instanceof EReference && ((EReference) ref).isContainment()) {
+						if (!objequals((EObject)first, (EObject)target, etf)) {
+							return false;
+						}
 					}
 				} else {
 					if (first == null) {
@@ -946,6 +974,9 @@ public class MyResource {
 	}
 
 	public boolean equals(MyResource cloned, EcoreTransferFunction etf) {
+		if (res.getContents().size() != cloned.getResource().getContents().size()) {
+			return false;
+		}
 		for (EObject eobj: iterateAllContents()) {
 			EObject target = etf.forward(eobj);
 			if (target == null || target.eResource() == null) {
@@ -957,15 +988,37 @@ public class MyResource {
 		}
 		EcoreTransferFunction back = etf.inverse();
 		for (EObject rev: cloned.iterateAllContents()) {
-			EObject source = etf.forward(rev);
+			EObject source = back.forward(rev);
 			if (source == null || source.eResource() == null) {
 				return false;
 			}
-			if (!objequals(rev,source,etf)) {
+			if (!objequals(rev,source,back)) {
 				return false;
 			}
 		}
 		return true;
+	}
+
+	public EcoreTransferFunction cloneFunc() {
+		EcoreUtil.Copier copier = new EcoreUtil.Copier();
+		MyResource cloned = clone(copier);
+		return new EcoreMapTransferFunction(getResource(),cloned.getResource(),copier);
+	}
+
+	public boolean equalsTarget(EcoreTransferFunction cf) {
+		if (getResource().equals(cf.forwardResource())) {
+			return equals(MyResource.get(cf.backResource()), cf.inverse());
+		} else {
+			return equals(MyResource.get(cf.forwardResource()), cf);
+		}
+	}
+
+	public void checkResource() {
+		for (EObject eobj: iterateAllContents()) {
+			if (eobj.eResource() == null) {
+				throw new RuntimeException("Null Resource in my resource!!");
+			}
+		}
 	}
 
 

@@ -6,11 +6,14 @@ import java.util.Random;
 
 import at.ac.tuwien.big.autoedit.scope.helper.CountingIterator;
 import at.ac.tuwien.big.autoedit.scope.helper.ListGenerator;
+import at.ac.tuwien.big.autoedit.transfer.EcoreTransferFunction;
 
 public class EqualProbabilityIndexScope implements ValueScope<Integer,Boolean>{
 	
 	public static interface Sizer {
 		public int size();
+		
+		public void transfer(EcoreTransferFunction func);
 	}
 	
 	private Sizer sizer;
@@ -68,4 +71,8 @@ public class EqualProbabilityIndexScope implements ValueScope<Integer,Boolean>{
 		return sample().next();
 	}
 
+	@Override
+	public void transfer(EcoreTransferFunction transferFunc) {
+		sizer.transfer(transferFunc);
+	}
 }

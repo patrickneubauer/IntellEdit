@@ -50,6 +50,7 @@ import at.ac.tuwien.big.autoedit.search.local.impl.SearchTask;
 import at.ac.tuwien.big.autoedit.search.local.impl.ViolatedConstraintsEvaluator;
 import at.ac.tuwien.big.autoedit.transfer.EcoreTransferFunction;
 import at.ac.tuwien.big.autoedit.transfer.URIBasedEcoreTransferFunction;
+import at.ac.tuwien.big.autoedit.xtext.DynamicValidator;
 import at.ac.tuwien.big.autoedit.xtext.DynamicValidatorIFace;
 import at.ac.tuwien.big.autoedit.xtext.ExpressionQuickfixInfo;
 
@@ -111,7 +112,11 @@ public class QuickfixTestRunner implements DynamicValidatorIFace {
 		
 	}
 	
-	public Resource getResource() {
+	public MyResource getResource() {
+		return MyResource.get(curResource);
+	}
+	
+	public Resource getMainResource() {
 		return curResource;
 	}
 	
@@ -130,6 +135,9 @@ public class QuickfixTestRunner implements DynamicValidatorIFace {
 				if (localErrorRemaining < 0) {
 					System.err.println();
 				}
+				if (GlobalSearch.FILTER_GRAMMAR_ERROR && evals[ViolatedConstraintsEvaluator.GRAMMAR_ERRORS] > 0.0) {
+					return null;
+				}
 				double fixedConstraints = evals[2];
 				MyResourceContainer cont = search.getContainer();
 				//Check if it can be pareto-dominating
@@ -146,6 +154,9 @@ public class QuickfixTestRunner implements DynamicValidatorIFace {
 						if (costs[0] > 0) {
 							System.err.println("??");
 							costs = new ViolatedConstraintsEvaluator().evaluate(curP.getChange().transfered(etf), wrapper);
+						}
+						if (GlobalSearch.FILTER_GRAMMAR_ERROR && costs[ViolatedConstraintsEvaluator.GRAMMAR_ERRORS] > 0.0) {
+							continue;
 						}
 						cont.pushResource(etf);
 						curP.setCurQuality(costs[2]);
@@ -180,7 +191,7 @@ public class QuickfixTestRunner implements DynamicValidatorIFace {
 			}
 		});
 		if (search != null) {
-			search.setResource(curResource);
+			search.setResource(getResource());
 			search.changedSomething();
 		}
 	}
@@ -278,7 +289,7 @@ public class QuickfixTestRunner implements DynamicValidatorIFace {
 	public ExpressionQuickfixInfo getQuickfixes(String string) {
 		ExpressionQuickfixInfo ret = storedQuickfixes.get(string);
 		if (ret == null) {
-			storedQuickfixes.put(string, ret = new ExpressionQuickfixInfo(string));
+			storedQuickfixes.put(string, ret = new ExpressionQuickfixInfo(this,string));
 		}
 		return ret;
 	}
@@ -320,6 +331,9 @@ public class QuickfixTestRunner implements DynamicValidatorIFace {
 						double changeEval = changeEvals[0];
 						double resolved = changeEvals[2];
 						double costs = changeEvals[1];
+						if (GlobalSearch.FILTER_GRAMMAR_ERROR && changeEvals[ViolatedConstraintsEvaluator.GRAMMAR_ERRORS] > 0.0) {
+							return null;
+						}
 						//TODO: ...
 					
 						/*if (uniqueÍd - 5 > myId) {
@@ -404,7 +418,7 @@ public class QuickfixTestRunner implements DynamicValidatorIFace {
 	@Override
 	public Change<?> randomQuickfix(Random random) {
 		if (proposedQuickfixes.isEmpty()) {
-			return Change.empty(getResource());
+			return Change.empty(getResource().getResource());
 		} else {
 			return proposedQuickfixes.get(random.nextInt(proposedQuickfixes.size()));
 		}

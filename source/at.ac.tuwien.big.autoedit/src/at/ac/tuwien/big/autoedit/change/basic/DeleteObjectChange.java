@@ -66,6 +66,14 @@ public class DeleteObjectChange implements ObjectChange<DeleteObjectChange> {
 	
 	private double costs = 0.0;
 	
+
+	@Override
+	public void checkChange() {
+		if (toDel.eResource() == null) {
+			throw new RuntimeException();
+		}
+	}
+	
 	@Override
 	public Undoer execute() {
 		if (toDel == null) {
@@ -74,17 +82,28 @@ public class DeleteObjectChange implements ObjectChange<DeleteObjectChange> {
 		CostProvider prov = costProvider();
 		costs = prov.getDeleteCosts(toDel);
 		
+		 Stack<Undoer> deletedContained = new Stack<Undoer>();
+		    for (EReference ref: toDel.eClass().getEAllReferences()) {
+		    	if (ref.isContainment()) {
+		    		BasicClearConstantChange bcc = new BasicClearConstantChange(res, toDel, ref);
+		    		deletedContained.add(bcc.execute());
+		    		costs+= bcc.getCosts();
+		    	}
+		    }
+		
 		//I have to preserve all edges ...
 		final Collection<EStructuralFeature.Setting> settings = MyEcoreUtil.getReferences(toDel);
 		final List<Integer> addIndices = new ArrayList<>();
 		for (EStructuralFeature.Setting setting: settings) {
 		   if (FeatureMapUtil.isMany(setting.getEObject(), setting.getEStructuralFeature()))
 		    {
-			   List<?> list = (List<?>)setting.get(false);
+			   List<?> list = (List<?>)setting.get(true);
 			   if (list != null) {
 				   addIndices.add(list.indexOf(toDel));
 		       		list.remove(toDel);
 		       		costs+= prov.getFunction(toDel).getCosts(toDel, null);
+			   } else {
+				   addIndices.add(-1);
 			   }
 		    }
 		    else
@@ -100,7 +119,7 @@ public class DeleteObjectChange implements ObjectChange<DeleteObjectChange> {
 			addInResource = ieo.eDirectResource();
 		} else {
 			addInResource = (toDel.eResource().getContents().contains(toDel))?toDel.eResource():null;
-		}
+		}/*
 		final EObject container = (ieo==null)?toDel.eContainer():ieo.eInternalContainer();
 		final EReference feature = toDel.eContainmentFeature();
 		int idx = -1;
@@ -117,26 +136,23 @@ public class DeleteObjectChange implements ObjectChange<DeleteObjectChange> {
 	        container.eUnset(feature);
 	        costs+= costProvider().getFunction(toDel).getCosts(toDel, null);
 	      }
-	    }
+	    }*/
+	    int rind = -1;
 	    if (addInResource != null) {
+	    	rind = addInResource.getContents().indexOf(toDel);
 	    	addInResource.getContents().remove(toDel);
 	    	costs+= costProvider().getFunction(toDel).getCosts(toDel, null);
 	    }
-	    Stack<Undoer> deletedContained = new Stack<Undoer>();
-	    for (EReference ref: toDel.eClass().getEAllReferences()) {
-	    	if (ref.isContainment()) {
-	    		BasicClearConstantChange bcc = new BasicClearConstantChange(res, toDel, ref);
-	    		deletedContained.add(bcc.execute());
-	    		costs+= bcc.getCosts();
-	    	}
-	    }
+	    int frind = rind;
+	   
 	    MyResource.get(res).trackDeleted(toDel);
-	    final int fidx = idx;
+	 //   final int fidx = idx;
 		return ()->{
-			if (addInResource != null) {
-				addInResource.getContents().add(toDel);
+
+			if (addInResource != null && frind != -1) {
+				addInResource.getContents().add(frind,toDel);
 			}
-			if (container != null) {
+			/*if (container != null) {
 				if (FeatureMapUtil.isMany(container, feature)) {
 					if (fidx != -1) {
 						try {
@@ -149,7 +165,7 @@ public class DeleteObjectChange implements ObjectChange<DeleteObjectChange> {
 				} else {
 					container.eSet(feature, toDel);
 				}
-			}
+			}*/
 			int myInd = 0;
 			for (EStructuralFeature.Setting setting: settings) {
 				if (FeatureMapUtil.isMany(setting.getEObject(), setting.getEStructuralFeature())) {
@@ -162,6 +178,7 @@ public class DeleteObjectChange implements ObjectChange<DeleteObjectChange> {
 			    }
 				++myInd;
 			}
+
 			while (!deletedContained.isEmpty()) {
 				deletedContained.pop().undo();
 			}
@@ -222,5 +239,11 @@ public class DeleteObjectChange implements ObjectChange<DeleteObjectChange> {
 	@Override
 	public boolean isIdentity() {
 		return toDel == null || !toDel.eResource().equals(forResource());
+	}
+	
+
+	@Override
+	public Undoer executeRemoveEmpty() {
+		return execute();
 	}
 }

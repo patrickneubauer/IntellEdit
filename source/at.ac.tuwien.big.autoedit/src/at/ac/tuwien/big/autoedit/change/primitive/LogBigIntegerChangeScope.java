@@ -4,6 +4,7 @@ import java.math.BigInteger;
 import java.util.Iterator;
 
 import at.ac.tuwien.big.autoedit.scope.ValueScope;
+import at.ac.tuwien.big.autoedit.transfer.EcoreTransferFunction;
 
 public class LogBigIntegerChangeScope implements ValueScope<BigInteger, Boolean> {
 	private LogIntScope base = LogIntScope.INSTANCE;
@@ -53,6 +54,10 @@ public class LogBigIntegerChangeScope implements ValueScope<BigInteger, Boolean>
 	@Override
 	public Iterator<BigInteger> sample() {
 		return addIter(base.sample());
+	}
+	
+	@Override
+	public void transfer(EcoreTransferFunction transferFunc) {
 	}
 
 }

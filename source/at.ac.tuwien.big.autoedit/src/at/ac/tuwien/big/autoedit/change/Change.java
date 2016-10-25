@@ -2,6 +2,8 @@ package at.ac.tuwien.big.autoedit.change;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -19,6 +21,7 @@ import java.util.WeakHashMap;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.jface.text.BadLocationException;
+import org.eclipse.xtext.resource.XtextResource;
 import org.eclipse.xtext.ui.editor.XtextEditor;
 import org.eclipse.xtext.ui.editor.model.IXtextDocument;
 import org.eclipse.xtext.ui.editor.model.XtextDocument;
@@ -59,6 +62,49 @@ public interface Change<Type extends Change<Type>> {
 	
 	public default MyResource forMyResource() {
 		return MyResource.get(forResource());
+	}
+	
+	public Undoer executeRemoveEmpty();
+	
+	public default void removeEmptyWhenExecuting() {
+		executeRemoveEmpty().undo();
+	}
+	
+	public default boolean canBeQuickfixApplied(org.eclipse.xtext.serializer.ISerializer serializer) {
+		try {
+			Undoer undoer = execute();
+			try {
+				Resource ores = forResource();
+				synchronized(serializer) {
+					for (EObject eobj: ores.getContents()) {
+						serializer.serialize(eobj);
+					}
+				}
+			} catch (Exception e) {
+				StringWriter writer = new StringWriter();
+				PrintWriter pw = new PrintWriter(writer);
+				e.printStackTrace(pw);
+				String op = writer.toString();
+				System.out.println(op);
+				try {
+				synchronized(serializer) {
+					for (EObject eobj: forResource().getContents()) {
+						serializer.serialize(eobj);
+					}
+				} } catch (Exception e2){}
+				undoer.undo();
+				return true;
+			}
+			undoer.undo();
+			return true; 
+		} catch (Exception e) {
+			StringWriter writer = new StringWriter();
+			PrintWriter pw = new PrintWriter(writer);
+			e.printStackTrace(pw);
+			String op = writer.toString();
+			System.out.println(op);
+			return false;
+		}
 	}
 	
 	public default void addFixReferences(Collection<FixAttemptReference> refs) {
@@ -133,6 +179,7 @@ public interface Change<Type extends Change<Type>> {
 	
 	public  void removeNonretained(Set<Change<?>> retain, Set<Change<?>> removeSet);
 	
+	
 	public default void removeUnnecessarySubchanges() {
 		Map<BasicChange<?>, Set<Change<?>>> container = new HashMap<BasicChange<?>, Set<Change<?>>>();
 		Set<Change<?>> removeSet = new HashSet<Change<?>>();
@@ -164,10 +211,19 @@ public interface Change<Type extends Change<Type>> {
 		public EmptyChange(Resource forResource) {
 			this.forResource = forResource;
 		}
+		
+		public void checkChange() {
+			
+		}
 
 		@Override
 		public Iterable getSubChanges() {
 			return Collections.emptyList();
+		}
+		
+		@Override
+		public Undoer executeRemoveEmpty() {
+			return Undoer.EMPTY;
 		}
 
 		@Override
@@ -292,8 +348,11 @@ public interface Change<Type extends Change<Type>> {
 	public default Change<?> transfered(EcoreTransferFunction transferFunc) {
 		Change<?> ret = clone();
 		ret.transfer(transferFunc);
+		ret.checkChange();
 		return ret;
 	}
+	
+	public void checkChange();
 	
 	public String toString(EObject context);
 
@@ -314,5 +373,6 @@ public interface Change<Type extends Change<Type>> {
 	public default String toString(String contextUri) {
 		return toString();
 	}
+
 }
  

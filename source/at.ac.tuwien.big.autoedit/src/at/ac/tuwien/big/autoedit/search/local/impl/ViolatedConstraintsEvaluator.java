@@ -34,17 +34,25 @@ import at.ac.tuwien.big.autoedit.evaluate.EvaluationState;
 import at.ac.tuwien.big.autoedit.evaluate.impl.EvaluableManagerImpl;
 import at.ac.tuwien.big.autoedit.evaluate.impl.MultiplicityEvaluable;
 import at.ac.tuwien.big.autoedit.evaluate.impl.OCLExpressionEvaluable;
+import at.ac.tuwien.big.autoedit.fixer.FixAttempt;
 import at.ac.tuwien.big.autoedit.fixer.MakeTrue;
+import at.ac.tuwien.big.autoedit.fixer.SetAdd;
+import at.ac.tuwien.big.autoedit.fixer.SetAddAny;
+import at.ac.tuwien.big.autoedit.fixer.SetRemove;
+import at.ac.tuwien.big.autoedit.fixer.SetRemoveAny;
 import at.ac.tuwien.big.autoedit.oclvisit.EvalResult;
 import at.ac.tuwien.big.autoedit.oclvisit.FixAttemptFeatureReferenceImpl;
 import at.ac.tuwien.big.autoedit.oclvisit.FixAttemptReference;
 import at.ac.tuwien.big.autoedit.oclvisit.FixAttemptReferenceImpl;
 import at.ac.tuwien.big.autoedit.oclvisit.RejectingFilterManager;
 import at.ac.tuwien.big.autoedit.oclvisit.TracingEvaluationVisitor;
+import at.ac.tuwien.big.autoedit.transfer.EcoreTransferFunction;
 
 public class ViolatedConstraintsEvaluator implements ResourceEvaluator<Evaluation>{
 
 	
+	public static final int GRAMMAR_ERRORS = 8;
+
 	@Override
 	/**
 	 * First -violated constraints currently, costs, resolved constraints, removed violations, removed fulfilled, added constraints, added fulfilled, invalidated constraints
@@ -62,6 +70,7 @@ public class ViolatedConstraintsEvaluator implements ResourceEvaluator<Evaluatio
 		double wrongifyedViolations = 0.0;
 		double removedFulfilled = 0.0;
 		double addedFulfilled = 0.0;
+		double grammarProblemsIntroduced = 0.0;
 		Map<EAttribute,Map<Object,Set<Object>>> idOccurrences = ref.ids;
 		synchronized(ref) {
 			if (curEvaluation == null) {			
@@ -111,6 +120,7 @@ public class ViolatedConstraintsEvaluator implements ResourceEvaluator<Evaluatio
 		}
 		Map<Object, Map<Evaluable<?,?>, Double>> remaining = new HashMap<>(curEvaluation);
 		Map<EAttribute,Map<Object,Set<Object>>> newidOccurrences = ref.ids;
+		EcoreTransferFunction clonedFunc = ch.forMyResource().cloneFunc();
 		Undoer undoer = ch.execute();
 		double costs = ch.getCosts();
 		double ret = 0.0;
@@ -164,6 +174,23 @@ public class ViolatedConstraintsEvaluator implements ResourceEvaluator<Evaluatio
 						q = 1.0;
 					}
 					ret+= 1.0-q;
+					if (q < 1.0 && (cur == null || q < cur )) {
+						if (expr instanceof MultiplicityEvaluable) {
+							boolean isAdd = false;
+							boolean isRemove = false;
+							for (FixAttempt at: state.getResult().getPossibleFixes()) {
+								if (at instanceof SetAddAny || at instanceof SetAdd) { 
+									isAdd = true;
+								}
+								if (at instanceof SetRemoveAny || at instanceof SetRemove) {
+									isRemove = true;
+								}
+							}
+							if (isAdd) {
+								grammarProblemsIntroduced+= 1.0-q;
+							}
+						}
+					}
 					if (cur == null) {
 						addedViolations+= 1.0-q;
 						addedFulfilled+= q;
@@ -192,12 +219,16 @@ public class ViolatedConstraintsEvaluator implements ResourceEvaluator<Evaluatio
 			if (haveContainer == 0) {
 				//No container - great problem!
 				ret+= 99999999.0E10;
+				grammarProblemsIntroduced+=1.0;
 				resolvedViolations-=1.0E10;
 			} else {
 				ret+= haveContainer-1;
 			}
 		} finally {
 			undoer.undo();
+		}
+		if (!ch.forMyResource().equalsTarget(clonedFunc)) {
+			throw new RuntimeException();
 		}
 		Map<Object,Integer> oldviolationCount = new HashMap<Object, Integer>();
 		Map<Object,Integer> newviolationCount = new HashMap<Object, Integer>();
@@ -263,7 +294,7 @@ public class ViolatedConstraintsEvaluator implements ResourceEvaluator<Evaluatio
 		addedViolations+= addedIdViolations;
 		wrongifyedViolations+= introducedId;
 		ret+= haveIdViolations;
-		return new double[]{-ret,costs, resolvedViolations, removedViolations, removedFulfilled, addedViolations, addedFulfilled, wrongifyedViolations};
+		return new double[]{-ret,costs, resolvedViolations, removedViolations, removedFulfilled, addedViolations, addedFulfilled, wrongifyedViolations, grammarProblemsIntroduced};
 	}
 	
 	public void augmentSet(Set<FixAttemptReference> toAdd) {

@@ -94,6 +94,7 @@ public abstract class ParameterHolderChangeType<Self extends ChangeType<Self,Sub
 	@Override
 	public void transfer(EcoreTransferFunction transferFunc) {
 		for (int i = 0; i < isBound.length; ++i) {
+			parameters[i].transfer(transferFunc);
 			values[i] = ETransferrable.transfer(values[i], transferFunc);
 		}
 		this.resource = transferFunc.other(resource);

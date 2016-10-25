@@ -59,8 +59,15 @@ public class CreateObjectChange implements ObjectChange<CreateObjectChange> {
 
 	private double costs;
 	
+
+	@Override
+	public void checkChange() {
+		
+	}
+	
 	@Override
 	public Undoer execute() {
+		if (true) return Undoer.EMPTY;
 		EObject created = null;
 		Undoer subUndoer = null;
 		try {
@@ -143,5 +150,10 @@ public class CreateObjectChange implements ObjectChange<CreateObjectChange> {
 	@Override
 	public boolean isIdentity() {
 		return false;
+	}
+
+	@Override
+	public Undoer executeRemoveEmpty() {
+		return execute();
 	}
 }

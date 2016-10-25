@@ -19,5 +19,6 @@ public interface EvaluationState<T extends EvaluationState<T>> {
 	public EvalResult getResult();
 	
 	public double getQuality();
+
 	
 }

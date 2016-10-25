@@ -22,6 +22,7 @@ import at.ac.tuwien.big.autoedit.scope.EqualProbabilityScope;
 import at.ac.tuwien.big.autoedit.scope.ValueScope;
 import at.ac.tuwien.big.autoedit.scope.helper.EvalFunc;
 import at.ac.tuwien.big.autoedit.scope.helper.GetFunc;
+import at.ac.tuwien.big.autoedit.transfer.EcoreTransferFunction;
 
 public class ConditionalScopeParameterType<CT extends ChangeType<CT,?>, PType> implements ParameterType<CT, PType> {
 	
@@ -53,6 +54,12 @@ public class ConditionalScopeParameterType<CT extends ChangeType<CT,?>, PType> i
 	@Override
 	public Class<PType> getValueClass() {
 		return clazz;
+	}
+
+
+	@Override
+	public void transfer(EcoreTransferFunction transferFunc) {
+		scope.transfer(transferFunc);
 	}
 
 

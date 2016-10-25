@@ -9,6 +9,7 @@ import org.eclipse.emf.ecore.resource.Resource;
 import at.ac.tuwien.big.autoedit.change.ParameterType;
 import at.ac.tuwien.big.autoedit.change.parameter.SimpleParameter;
 import at.ac.tuwien.big.autoedit.ecore.util.MyResource;
+import at.ac.tuwien.big.autoedit.transfer.EcoreTransferFunction;
 
 public class FixedSetConstantChangeType<T> extends AbstractFixedFeatureChangeType<FixedSetConstantChangeType<T>,
 	BasicSetConstantChange> {
@@ -37,6 +38,12 @@ public class FixedSetConstantChangeType<T> extends AbstractFixedFeatureChangeTyp
 	@Override
 	protected String getShortName() {
 		return "Set";
+	}
+	
+
+	@Override
+	public void transfer(EcoreTransferFunction transferFunc) {
+		super.transfer(transferFunc);
 	}
 
 }

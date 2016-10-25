@@ -3,6 +3,7 @@ package at.ac.tuwien.big.autoedit.change;
 import java.util.Iterator;
 
 import at.ac.tuwien.big.autoedit.scope.ValueScope;
+import at.ac.tuwien.big.autoedit.transfer.EcoreTransferFunction;
 
 /**Der Parameter wird auch für Änderungen vrwendet, die bei Scopes auftreten ?!*/
 public interface Parameter<Type extends ChangeType<Type,?>,PType> {
@@ -33,6 +34,8 @@ public interface Parameter<Type extends ChangeType<Type,?>,PType> {
 	public void setName(String name);
 	
 	public void setIndex(int index);
+
+	public void transfer(EcoreTransferFunction transferFunc);
 
 
 }

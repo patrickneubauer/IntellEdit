@@ -29,12 +29,16 @@ public class MyResourceContainer implements Serializable {
 			MyResource target = myRes.clone(copier); 
 			EcoreTransferFunction func = new EcoreMapTransferFunction(myRes.getResource(),
 					target.getResource(), copier);
+			//MyResource.get(func.forwardResource()).checkResource();
 			return func;
 		}
-		return availableFunctiosns.pop();
+		EcoreTransferFunction ret = availableFunctiosns.pop();
+		//MyResource.get(ret.forwardResource()).checkResource();
+		return ret;
 	}
 	
 	public synchronized void pushResource(EcoreTransferFunction func) {
+		//MyResource.get(func.forwardResource()).checkResource();
 		availableFunctiosns.push(func);					
 	}
 }

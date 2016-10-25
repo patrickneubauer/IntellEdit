@@ -12,6 +12,7 @@ import java.util.Random;
 import java.util.TreeMap;
 
 import at.ac.tuwien.big.autoedit.scope.ValueScope;
+import at.ac.tuwien.big.autoedit.transfer.EcoreTransferFunction;
 
 public class LogBigIntegerScope implements ValueScope<BigInteger, Boolean>{
 
@@ -129,6 +130,10 @@ public class LogBigIntegerScope implements ValueScope<BigInteger, Boolean>{
 			}
 		};
 		
+	}
+	
+	@Override
+	public void transfer(EcoreTransferFunction transferFunc) {
 	}
 	
 

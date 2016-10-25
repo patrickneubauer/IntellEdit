@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
+import org.eclipse.emf.ecore.EAttribute;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EReference;
 import org.eclipse.emf.ecore.EStructuralFeature;
@@ -47,8 +48,20 @@ public class BasicAddConstantChange extends AbstractFeatureChange<BasicAddConsta
 	
 	@Override
 	public void transfer(EcoreTransferFunction func) {
-		super.transfer(func);
+		//Resource must be changed last probably?
 		value = func.transfer(value);
+		super.transfer(func);
+	}
+	
+
+	@Override
+	public void checkChange() {
+		super.checkChange();
+		if (forFeature() instanceof EReference && !((EReference)forFeature()).isContainment()) { 
+			if (value instanceof EObject && ((EObject) value).eResource() == null) {
+				throw new RuntimeException();
+			}
+		}
 	}
 	
 	private double costs;
@@ -58,7 +71,7 @@ public class BasicAddConstantChange extends AbstractFeatureChange<BasicAddConsta
 		try {
 		costs = 0.0;
 		if (forObject() == null || value == null) {
-			return ()->{};
+			return Undoer.EMPTY;
 		}
 		
 		boolean needSetVal = false;
@@ -80,7 +93,7 @@ public class BasicAddConstantChange extends AbstractFeatureChange<BasicAddConsta
 					}
 					prevResourceIndex = target.eResource()==null?-1:target.eResource().getContents().indexOf(target);
 					if (prevContainer == forObject() && contFeat == forFeature()) {
-						return ()->{};
+						return Undoer.EMPTY;
 					}
 				}
 				 
@@ -123,11 +136,11 @@ public class BasicAddConstantChange extends AbstractFeatureChange<BasicAddConsta
 					}
 				};
 			} else {
-				return ()->{};
+				return Undoer.EMPTY;
 			}
 		} else {
 			if (forFeature().isUnique() && MyEcoreUtil.getAsCollection(forObject(), forFeature()).contains(value)) {
-				return ()->{};
+				return Undoer.EMPTY;
 			} else {
 				MyEcoreUtil.addValue(forObject(), forFeature(), index, value);
 				return ()->{
@@ -144,8 +157,9 @@ public class BasicAddConstantChange extends AbstractFeatureChange<BasicAddConsta
 			
 		}
 		} catch (Exception e) {
+			e.printStackTrace();
 			System.err.println(e.getMessage());
-			return ()->{};
+			return Undoer.EMPTY;
 		}
 	}
  	

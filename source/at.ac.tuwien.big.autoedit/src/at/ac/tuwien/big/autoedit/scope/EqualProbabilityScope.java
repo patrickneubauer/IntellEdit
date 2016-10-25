@@ -4,6 +4,9 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
+import at.ac.tuwien.big.autoedit.transfer.ETransferrable;
+import at.ac.tuwien.big.autoedit.transfer.EcoreTransferFunction;
+
 public class EqualProbabilityScope<T> implements ValueScope<T,Boolean>{
 	
 	private List<T> t;
@@ -71,6 +74,11 @@ public class EqualProbabilityScope<T> implements ValueScope<T,Boolean>{
 	public T sampled() {
 		if (t.isEmpty()) {return null;}
 		return sample().next();
+	}
+
+	@Override
+	public void transfer(EcoreTransferFunction transferFunc) {
+		t = ETransferrable.transfer(t, transferFunc);
 	}
 
 }

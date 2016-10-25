@@ -3,7 +3,7 @@
 package serviceexample.impl;
 
 import java.math.BigInteger;
-
+import java.util.Arrays;
 import java.util.Collection;
 
 import org.eclipse.emf.common.notify.Notification;
@@ -51,6 +51,8 @@ public class ClusterImpl extends NamedThingImpl implements Cluster {
 	 * @ordered
 	 */
 	protected EList<Service> services;
+	
+	
 
 	/**
 	 * The cached value of the '{@link #getBackup() <em>Backup</em>}' reference.

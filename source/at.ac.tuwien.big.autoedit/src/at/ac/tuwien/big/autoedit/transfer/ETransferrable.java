@@ -2,9 +2,13 @@ package at.ac.tuwien.big.autoedit.transfer;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Objects;
 
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.resource.Resource;
@@ -28,7 +32,7 @@ public interface ETransferrable<Sub extends ETransferrable<Sub>> {
 	public static EObject transfer(EObject base, EcoreTransferFunction func) {
 		if (base == null) {return null;}
 		EObject ret = func.forward((EObject)base);
-		if (ret == base && base.eResource() != null && base.eResource().equals(func.backResource())) {
+		if (ret == base && base.eResource() != null && base.eResource().equals(func.backResource()) && !base.eResource().equals(func.forwardResource())) {
 			//Create new
 			ret = func.weakChangeResource(base);
 		}
@@ -66,16 +70,38 @@ public interface ETransferrable<Sub extends ETransferrable<Sub>> {
 		return base;
 	}
 	
+	public static<T,U> Map<T,U> transfer(Map<T,U> base, EcoreTransferFunction func) {
+		Map<T,U> newMap = new HashMap<>();
+		boolean modified = false;
+		for (Entry<T,U> entr: base.entrySet()) {
+			entr.setValue((U)ETransferrable.transfer(entr.getValue(), func));
+			T key = (T)transfer(entr.getKey(),func);
+			if (!Objects.equals(key, entr.getKey())) {
+				modified = true;
+			}
+			newMap.put(key,entr.getValue());
+		}
+		if (modified)  {
+			base.clear();
+			base.putAll(newMap);
+		}
+		
+		return base;
+	}
+	
 	public static<Sub extends ETransferrable<Sub>> Sub transfer(Sub base, EcoreTransferFunction func) {
 		base.transfer(func);
 		return base;
 	}
+	
 	
 	public static Object transfer(Object base, EcoreTransferFunction func) {
 		if (base instanceof EObject) {
 			return transfer((EObject)base,func);
 		} else if (base instanceof Collection) {
 			return transfer((Collection)base,func);
+		} else if (base instanceof Map) {
+			return transfer((Map)base,func);
 		} else if (base instanceof ETransferrable) {
 			return transfer((ETransferrable)base,func);
 		} else if (base instanceof Resource) {

@@ -19,6 +19,7 @@ import at.ac.tuwien.big.autoedit.change.Undoer;
 import at.ac.tuwien.big.autoedit.ecore.util.MyEcoreUtil;
 import at.ac.tuwien.big.autoedit.oclvisit.FixAttemptFeatureReferenceImpl;
 import at.ac.tuwien.big.autoedit.oclvisit.FixAttemptReference;
+import at.ac.tuwien.big.autoedit.transfer.ETransferrable;
 import at.ac.tuwien.big.autoedit.transfer.EcoreTransferFunction;
 
 public class BasicSetConstantChange extends AbstractFeatureChange<BasicSetConstantChange> implements FeatureChange<BasicSetConstantChange> {
@@ -45,8 +46,21 @@ public class BasicSetConstantChange extends AbstractFeatureChange<BasicSetConsta
 	
 	@Override
 	public void transfer(EcoreTransferFunction func) {
+		if (value instanceof Collection) {
+			value = ETransferrable.transfer(new ArrayList((Collection)value),func);
+		} else {
+			value = func.transfer(value);
+		}
 		super.transfer(func);
-		value = func.transfer(value);
+	}
+	
+
+	@Override
+	public void checkChange() {
+		super.checkChange();
+		if (value instanceof EObject && ((EObject) value).eResource() == null) {
+			throw new RuntimeException();
+		}
 	}
 	
 	@Override
@@ -67,6 +81,9 @@ public class BasicSetConstantChange extends AbstractFeatureChange<BasicSetConsta
 					};
 				} else {
 					Object oldValue = l.get(index);
+					if (Objects.equals(oldValue, value)) {
+						return Undoer.EMPTY;
+					}
 					costs+= costProvider().getFunction(value).getCosts(l.get(index),value);					
 					l.set(index,value);
 					return ()->{
@@ -76,6 +93,9 @@ public class BasicSetConstantChange extends AbstractFeatureChange<BasicSetConsta
 			} else {
 				Collection cur = new ArrayList();
 				Collection then = MyEcoreUtil.asCollection(value);
+				if (cur.equals(then)) {
+					return Undoer.EMPTY;
+				}
 				for (Object o: cur) {
 					if (!then.contains(o)) {
 						costs+= costProvider().getFunction(o).getCosts(o, null);
@@ -86,6 +106,7 @@ public class BasicSetConstantChange extends AbstractFeatureChange<BasicSetConsta
 						costs+= costProvider().getFunction(o).getCosts(null,o);
 					}
 				}
+				
 				forObject().eSet(forFeature(), value);
 				
 				return ()->{
@@ -94,6 +115,9 @@ public class BasicSetConstantChange extends AbstractFeatureChange<BasicSetConsta
 			}
 		} else {
 			Object cur = forObject().eGet(forFeature());
+			if (Objects.equals(cur, value)) {
+				return Undoer.EMPTY;
+			}
 			costs+= costProvider().getFunction(cur).getCosts(cur, value);
 			forObject().eSet(forFeature(), value);
 			return ()->{
@@ -102,7 +126,7 @@ public class BasicSetConstantChange extends AbstractFeatureChange<BasicSetConsta
 			};
 		}
 		} catch (Exception e) {
-			return ()->{};
+			return Undoer.EMPTY;
 		}
 	}
 	

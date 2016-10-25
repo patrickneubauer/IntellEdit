@@ -17,6 +17,7 @@ import at.ac.tuwien.big.autoedit.change.parameter.SimpleParameter;
 import at.ac.tuwien.big.autoedit.ecore.util.MyResource;
 import at.ac.tuwien.big.autoedit.scope.helper.EvalFunc;
 import at.ac.tuwien.big.autoedit.scope.helper.ListGenerator;
+import at.ac.tuwien.big.autoedit.transfer.EcoreTransferFunction;
 
 public abstract class AbstractFeatureChangeType<CT extends AbstractFeatureChangeType<CT,C>, C extends FeatureChange<C>> extends ParameterHolderChangeType<CT,C> implements FeatureChangeType<CT, C>  {
 

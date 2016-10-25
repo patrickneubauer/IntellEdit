@@ -14,6 +14,8 @@ import org.eclipse.emf.ecore.impl.MinimalEObjectImpl;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.util.EcoreUtil;
 
+import at.ac.tuwien.big.autoedit.ecore.util.MyEcoreUtil;
+
 public class EcoreMapTransferFunction extends MapTransferFunction<EObject> implements EcoreTransferFunction {
 	
 	private WeakReference<Resource> start;
@@ -86,15 +88,19 @@ public class EcoreMapTransferFunction extends MapTransferFunction<EObject> imple
 		}
 	}
 	
-	private WeakHashMap<EObject, EObject> reverseCopied = new WeakHashMap<EObject, EObject>(); 
+	private WeakHashMap<EObject, WeakReference<EObject>> reverseCopied = new WeakHashMap<>(); 
 
 	@Override
 	public EObject weakChangeResource(EObject base, Resource targetR) {
 		if (reverseCopied.get(base) != null) {
-			return reverseCopied.get(base);
+			EObject ret = reverseCopied.get(base).get();
+			if (ret != null) {
+				return ret;
+			}
 		}
-		EObject otherObj = copier.copy(base);
-		reverseCopied.put(otherObj,base);
+		EObject otherObj = MyEcoreUtil.nearCopy(base, copier);
+		reverseCopied.put(base,new WeakReference<EObject>(otherObj));
+		reverseCopied.put(otherObj,new WeakReference<EObject>(base));
 		if (otherObj instanceof MinimalEObjectImpl) {
 			MinimalEObjectImpl eobj = (MinimalEObjectImpl)otherObj;
 			try {

@@ -9,6 +9,8 @@ import java.util.PriorityQueue;
 import java.util.RandomAccess;
 import java.util.Map.Entry;
 
+import at.ac.tuwien.big.autoedit.transfer.ETransferrable;
+import at.ac.tuwien.big.autoedit.transfer.EcoreTransferFunction;
 import at.tuwien.big.virtmod.datatype.IteratorUtils;
 
 /***Der Double gibt an, wie oft - relativ gesehen - eine Lösung vorkommen sollte*/
@@ -73,6 +75,13 @@ public class SimpleMapValueScope<T> implements ValueScope<T, Double> {
 	@Override
 	public synchronized T sampled() {
 		return mySampler.next();
+	}
+
+	@Override
+	public void transfer(EcoreTransferFunction transferFunc) {
+		ETransferrable.transfer(accessList, transferFunc);
+		ETransferrable.transfer(this.heap, transferFunc);
+		ETransferrable.transfer(this.solutionQuality, transferFunc);
 	}
 
 
