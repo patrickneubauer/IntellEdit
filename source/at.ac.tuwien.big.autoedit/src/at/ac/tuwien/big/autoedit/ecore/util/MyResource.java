@@ -1,5 +1,6 @@
 package at.ac.tuwien.big.autoedit.ecore.util;
 
+import java.lang.ref.WeakReference;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigInteger;
@@ -75,10 +76,10 @@ import at.tuwien.big.virtmod.datatype.IteratorUtils;
 
 public class MyResource {
 	
-	private Resource res;
+	private WeakReference<Resource> res;
 	
 	public MyResource(Resource from) {
-		this.res = from;
+		this.res = new WeakReference<Resource>(from);
 		if (from == null) {
 			System.out.println("Null resource!");
 		}
@@ -99,7 +100,7 @@ public class MyResource {
 	}
 	
 	public Resource getResource() {
-		return res;
+		return res.get();
 	}
 	
 	private List<EStructuralFeature> feat = null;
@@ -639,7 +640,7 @@ public class MyResource {
 		if (evalFunc == null) {
 			evalFunc = new EvalFunc<EClass, List<EObject>>() {
 				{
-					Iterator<EObject> iter = res.getAllContents();
+					Iterator<EObject> iter = getResource().getAllContents();
 					while (iter.hasNext()) {
 						EObject next = iter.next();
 						EClass cl = next.eClass();
@@ -795,11 +796,11 @@ public class MyResource {
 	
 	public MyResource clone(Copier copier) {
 		Resource newResource = new ResourceImpl();
-		newResource.setURI(res.getURI());
-		/*for (EObject eobj: (Iterable<EObject>)()->res.getAllContents()) {
+		newResource.setURI(getResource().getURI());
+		/*for (EObject eobj: (Iterable<EObject>)()->getResource().getAllContents()) {
 			copier.copy(eobj);
 		}*/
-		newResource.getContents().addAll(copier.copyAll(res.getContents()));
+		newResource.getContents().addAll(copier.copyAll(getResource().getContents()));
 		copier.copyReferences();
 		MyResource ret = MyResource.get(newResource);
 		ret.setCostProvider(getCostProvider());
@@ -828,7 +829,7 @@ public class MyResource {
 	}
 
 	public Iterable<EObject> iterateAllContents() {
-		return ()->res.getAllContents();
+		return ()->getResource().getAllContents();
 	}
 	
 	public ChangeType<?,?> getRandomChange(EObject eobj, EStructuralFeature toChange, Random random) {
@@ -841,25 +842,25 @@ public class MyResource {
 			boolean mayTakeAdd = curSize <= toChange.getUpperBound();
 			if (mayTakeDelete && (!mayTakeAdd || random.nextBoolean())) {
 				//Delete change
-				ChangeType<?, ?> deleteChange = new FixedDeleteConstantChangeType<>(res,eobj,toChange);
+				ChangeType<?, ?> deleteChange = new FixedDeleteConstantChangeType<>(getResource(),eobj,toChange);
 				return deleteChange;
 			} else {
-				ChangeType<?, ?> addChange = new FixedAddConstantChangeType(res,eobj,toChange);
+				ChangeType<?, ?> addChange = new FixedAddConstantChangeType(getResource(),eobj,toChange);
 				return addChange;
 			} 
 		} else {
 			Collection curCol = MyEcoreUtil.getAsCollection(eobj, toChange);
 			if (curCol.isEmpty()) {
 				//Generate
-				ChangeType<?, ?> addChange = new FixedAddConstantChangeType(res,eobj,toChange);
+				ChangeType<?, ?> addChange = new FixedAddConstantChangeType(getResource(),eobj,toChange);
 				return addChange;
 			} else {
 				if (toChange.getLowerBound() == 0 && random.nextInt(5)==0) {
-					ChangeType<?, ?> setChange = new FixedClearChangeType<>(res,eobj,toChange);
+					ChangeType<?, ?> setChange = new FixedClearChangeType<>(getResource(),eobj,toChange);
 					return setChange;
 				}
 				//Set
-				ChangeType<?, ?> setChange = new FixedSetConstantChangeType(res,eobj,toChange,this.defaultModifier(toChange,eobj));
+				ChangeType<?, ?> setChange = new FixedSetConstantChangeType(getResource(),eobj,toChange,this.defaultModifier(toChange,eobj));
 				return setChange;
 			}
 		}
@@ -886,12 +887,12 @@ public class MyResource {
 			List<EObject> instance = getAllInstances(randomClass);
 			if (!instance.isEmpty() && random.nextBoolean()) {
 				//Delete
-				ChangeType<?, ?> delete = DeleteObjectChangeType.createObjectFromObjects(res, instance);
+				ChangeType<?, ?> delete = DeleteObjectChangeType.createObjectFromObjects(getResource(), instance);
 				return delete;
 			}
 			//Create
 			if (!randomClass.isAbstract()) {
-				ChangeType<?, ?> create = CreateObjectChangeType.createObjectFromClasses(res,randomClass);
+				ChangeType<?, ?> create = CreateObjectChangeType.createObjectFromClasses(getResource(),randomClass);
 				return create;
 			}
 		}
@@ -908,7 +909,7 @@ public class MyResource {
 			return getRandomChange(robj, randomFeat, random);
 		}
 		
-		return new EmptyChangeType(res);
+		return new EmptyChangeType(getResource());
 	}
 	
 	private CostProvider prov = CostProvider.DEFAULT_PROVIDER;
@@ -974,7 +975,7 @@ public class MyResource {
 	}
 
 	public boolean equals(MyResource cloned, EcoreTransferFunction etf) {
-		if (res.getContents().size() != cloned.getResource().getContents().size()) {
+		if (getResource().getContents().size() != cloned.getResource().getContents().size()) {
 			return false;
 		}
 		for (EObject eobj: iterateAllContents()) {

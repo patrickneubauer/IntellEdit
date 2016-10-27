@@ -1,6 +1,7 @@
 package at.ac.tuwien.big.autoedit.change.basic;
 
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
