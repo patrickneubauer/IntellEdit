@@ -14,6 +14,10 @@ public class ProposalListImpl<T extends Comparable<T>, U extends Proposal<T,U>> 
 	private PriorityQueue<U> queue = new PriorityQueue<U>();
 	private WeakHashMap<Change<?>,Boolean> knowChanges = new WeakHashMap<>();
 
+	public boolean isEmpty() {
+		return queue.isEmpty();
+	}
+	
 	@Override
 	public void addProposal(U prob) {
 		if (knowChanges.containsKey(prob.getChange())) {

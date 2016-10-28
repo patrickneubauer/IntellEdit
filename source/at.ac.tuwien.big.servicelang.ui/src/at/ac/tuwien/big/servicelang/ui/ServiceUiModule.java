@@ -35,4 +35,12 @@ public class ServiceUiModule extends at.ac.tuwien.big.servicelang.ui.AbstractSer
 		return DynamicQuickAssistProcessor.class;
 	}
 
+	// contributed by org.eclipse.xtext.generator.builder.BuilderIntegrationFragment
+	public Class<? extends org.eclipse.xtext.ui.editor.IXtextEditorCallback> bindIXtextEditorCallback() {
+		return NatureAddingAndChangingCallback.class;
+	}
+	
+	public Class<? extends org.eclipse.xtext.ui.editor.XtextEditor> bindXtextEditor() {
+		return MyXtextEditor.class;
+	}
 }

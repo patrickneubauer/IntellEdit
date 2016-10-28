@@ -20,13 +20,16 @@ import java.util.WeakHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.eclipse.core.resources.IMarker;
 import org.eclipse.emf.ecore.EAttribute;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EPackage;
 import org.eclipse.emf.ecore.EStructuralFeature;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.xtext.resource.XtextResource;
+import org.eclipse.xtext.util.CancelIndicator;
 import org.eclipse.xtext.validation.Check;
+import org.eclipse.xtext.validation.CheckMode;
 import org.eclipse.xtext.validation.CheckType;
 import org.eclipse.xtext.validation.EValidatorRegistrar;
 import org.eclipse.xtext.validation.Issue;
@@ -53,6 +56,7 @@ import at.ac.tuwien.big.autoedit.oclvisit.FixAttemptReference;
 import at.ac.tuwien.big.autoedit.oclvisit.FixAttemptReferenceImpl;
 import at.ac.tuwien.big.autoedit.oclvisit.FixAttemptReferenceInfo;
 import at.ac.tuwien.big.autoedit.proposal.Proposal;
+import at.ac.tuwien.big.autoedit.proposal.Proposal.Source;
 import at.ac.tuwien.big.autoedit.proposal.impl.ProposalImpl;
 import at.ac.tuwien.big.autoedit.search.local.NeighborhoodProvider;
 import at.ac.tuwien.big.autoedit.search.local.SimpleStream;
@@ -161,6 +165,7 @@ public class DynamicValidator extends org.eclipse.xtext.validation.AbstractDecla
 	protected List<EPackage> getEPackages() {
 	    List<EPackage> result = new ArrayList<EPackage>();
 	    result.add(EPackage.Registry.INSTANCE.getEPackage("http://router/1.0"));
+	    IMarker marker;
 		return result;
 	}
 	
@@ -178,7 +183,16 @@ public class DynamicValidator extends org.eclipse.xtext.validation.AbstractDecla
 	private String validatorId = UUID.randomUUID().toString();
 	
 	public static DynamicValidator getValidator(String id) {
-		return validator.get(id);
+		DynamicValidator ret = validator.get(id);
+		if (ret != null) {
+			return ret;
+		}
+		for (Entry<String,DynamicValidator> entr: validator.entrySet()) {
+			if (entr.getKey().equals(id)) {
+				return entr.getValue();
+			}
+		}
+		return null;
 	}
 	
 	public static Map<String,DynamicValidator> validator = new HashMap<String, DynamicValidator>();
@@ -200,7 +214,7 @@ public class DynamicValidator extends org.eclipse.xtext.validation.AbstractDecla
 	
 	public ExpressionQuickfixInfo createQuickfixes(String string) {
 		ExpressionQuickfixInfo ret;
-		
+				
 		ExpressionQuickfixInfo old = 
 				storedQuickfixes.put(string, ret = new ExpressionQuickfixInfo(this,string));
 		/*if (old != null) {
@@ -226,155 +240,158 @@ public class DynamicValidator extends org.eclipse.xtext.validation.AbstractDecla
 	private boolean haveSaved = false;
 	
 	@Check(CheckType.FAST)
-	public synchronized void resetGenetic(EObject theObj) {
-		haveChecked = true;
-		if (!haveSaved) {
-			return;
-		}
-
-		if (theObj.eContainer() == null) {
-			if (theObj != null && theObj.eResource() != null) {
-				curResource = MyResource.get(theObj.eResource()).clone();
-				mainResource = theObj.eResource();
+	public void resetGenetic(EObject theObj) {
+		synchronized (paretoFront) {
+			haveChecked = true;
+			if (!haveSaved) {
+				return;
 			}
 
-				if (search == null && curResource != null) {
-					search = new GlobalSearch(getResource(), this, new SimpleStream<Change<?>>() {
-		
-						@Override
-						public Proposal<?, ?> add(Change<?> original, Change<?> processed, double[] evals) {
-							if (search == null) {
-								return null;
-							}
+			if (theObj.eContainer() == null) {
+				if (theObj != null && theObj.eResource() != null) {
+					curResource = MyResource.get(theObj.eResource()).clone();
+					mainResource = theObj.eResource();
+				}
 
-							if (GlobalSearch.FILTER_GRAMMAR_ERROR && evals[ViolatedConstraintsEvaluator.GRAMMAR_ERRORS] > 0.0) {
-								return null;
-							}
-							double curCosts = evals[1];
-							double localErrorRemaining = -evals[0];
-							double fixedConstraints = evals[2];
-							MyResourceContainer cont = search.getContainer();
-							//Check if it can be pareto-dominating
-							List<Proposal<?, ?>> curList = new ArrayList<Proposal<?,?>>();
-							synchronized(paretoFront) {
-								curList.addAll(paretoFront);
-							}
-							Evaluation wrapper = new Evaluation();
-							for (Proposal<?, ?> curP: curList) {
-								if (curP.getCosts() <= curCosts && (Double)curP.getQuality() >= -localErrorRemaining && curP.getCurQuality() >= fixedConstraints) {
-									EcoreTransferFunction etf = cont.pullResource();
-									if (!curP.getChange().forResource().equals(etf.backResource())) {
-										curP.getChange().transfer(new URIBasedEcoreTransferFunction(curP.getChange().forResource(), etf.backResource()));
-									}
-									//-violated constraints currently, costs, resolved constraints, removed violations, removed fulfilled, added constraints, added fulfilled, invalidated constraints
-									double[] costs = new ViolatedConstraintsEvaluator().evaluate(curP.getChange().transfered(etf), wrapper);
-									if (GlobalSearch.FILTER_GRAMMAR_ERROR && costs[ViolatedConstraintsEvaluator.GRAMMAR_ERRORS] > 0.0) {
-										continue;
-									}
-									cont.pushResource(etf);
-									curP.setCurQuality(costs[2]);
-									((Proposal<Double,?>)curP).setQuality(costs[0]);
-									curP.setCosts(costs[1]);
+					if (search == null && curResource != null) {
+						search = new GlobalSearch(getResource(), this, new SimpleStream<Change<?>>() {
+			
+							@Override
+							public Proposal<?, ?> add(Change<?> original, Change<?> processed, double[] evals) {
+								if (search == null) {
+									return null;
+								}
+
+								if (GlobalSearch.FILTER_GRAMMAR_ERROR && evals[ViolatedConstraintsEvaluator.GRAMMAR_ERRORS] > 0.0) {
+									return null;
+								}
+								double curCosts = evals[1];
+								double localErrorRemaining = -evals[0];
+								double fixedConstraints = evals[2];
+								MyResourceContainer cont = search.getContainer();
+								//Check if it can be pareto-dominating
+								List<Proposal<?, ?>> curList = new ArrayList<Proposal<?,?>>();
+								synchronized(paretoFront) {
+									curList.addAll(paretoFront);
+								}
+								Evaluation wrapper = new Evaluation();
+								for (Proposal<?, ?> curP: curList) {
 									if (curP.getCosts() <= curCosts && (Double)curP.getQuality() >= -localErrorRemaining && curP.getCurQuality() >= fixedConstraints) {
-										return null;
+										EcoreTransferFunction etf = cont.pullResource();
+										if (!curP.getChange().forResource().equals(etf.backResource())) {
+											curP.getChange().transfer(new URIBasedEcoreTransferFunction(curP.getChange().forResource(), etf.backResource()));
+										}
+										//-violated constraints currently, costs, resolved constraints, removed violations, removed fulfilled, added constraints, added fulfilled, invalidated constraints
+										double[] costs = new ViolatedConstraintsEvaluator().evaluate(curP.getChange().transfered(etf), wrapper);
+										if (GlobalSearch.FILTER_GRAMMAR_ERROR && costs[ViolatedConstraintsEvaluator.GRAMMAR_ERRORS] > 0.0) {
+											continue;
+										}
+										cont.pushResource(etf);
+										curP.setCurQuality(costs[2]);
+										((Proposal<Double,?>)curP).setQuality(costs[0]);
+										curP.setCosts(costs[1]);
+										if (curP.getCosts() <= curCosts && (Double)curP.getQuality() >= -localErrorRemaining && curP.getCurQuality() >= fixedConstraints) {
+											return null;
+										}
 									}
 								}
-							}
-							
-
-							if (mainResource instanceof XtextResource && DynamicValidator.PREFILTER_CHANGES && !original.canBeQuickfixApplied(((XtextResource)mainResource).getSerializer())) {
-								return null;
-							}
-							//It is in the pareto-set
-							ProposalImpl ret = new ProposalImpl<>(processed);
-							
-							ret.setCosts(curCosts);
-							ret.setCurQuality(fixedConstraints);
-							ret.setQuality(-localErrorRemaining);
-							
-							
-	
-							synchronized (paretoFront) {
-								paretoFront.removeIf((x)->(x.getCosts()>=curCosts && x.getCurQuality() <= -localErrorRemaining && (Double)x.getQuality() <= fixedConstraints));
-								paretoFront.add(ret);
 								
-							}
-							
-							
-							return ret;
-						}
-					});
-				}
-			if (search != null) {
-				search.setResource(curResource);
-				search.changedSomething();
-			}
-			List<Proposal<?, ?>> curList = new ArrayList<Proposal<?,?>>();
-			synchronized(paretoFront) {
-				curList.addAll(paretoFront);
-			}
-			String idStr = "GENETIC_"+advanceId();
-			ExpressionQuickfixInfo quickfixes = getQuickfixes(idStr);
-			
-			
-			
-			Evaluation wrapper = new Evaluation();
-			for (Proposal<?, ?> curP: curList) {
-				
-				
-				EcoreTransferFunction etf = search.getContainer().pullResource();
-				if (!curP.getChange().forResource().equals(etf.backResource())) {
-					EcoreTransferFunction trf = new URIBasedEcoreTransferFunction(curP.getChange().forResource(), etf.backResource());
-					curP.getChange().transfer(trf);
-				}
-				
-				//-violated constraints currently, costs, resolved constraints, removed violations, removed fulfilled, added constraints, added fulfilled, invalidated constraints
-				curP.getChange().checkChange();
-				Change<?> transfered = curP.getChange().transfered(etf);
-				double[] costs = new ViolatedConstraintsEvaluator().evaluate(transfered, wrapper);
-			
-				search.getContainer().pushResource(etf);
-				curP.setCurQuality(costs[2]);
-				((Proposal<Double,?>)curP).setQuality(costs[0]);
-				curP.setCosts(costs[1]);
-			}
-			
-			curList.removeIf((x)->x.getCurQuality()<= 0);
-			synchronized (paretoFront) {
-				paretoFront.removeIf((x)->x.getCurQuality()<= 0);
-			}
-			
+
+								if (mainResource instanceof XtextResource && DynamicValidator.PREFILTER_CHANGES && !original.canBeQuickfixApplied(((XtextResource)mainResource).getSerializer())) {
+									return null;
+								}
+								//It is in the pareto-set
+								ProposalImpl ret = new ProposalImpl<>(Source.GENETIC,processed);
+								
+								ret.setCosts(curCosts);
+								ret.setCurQuality(fixedConstraints);
+								ret.setQuality(-localErrorRemaining);
+								
+								
 		
-			int ind = 0;
-			for (Proposal<?, ?> curP: curList) {
-				EcoreTransferFunction trf = new URIBasedEcoreTransferFunction(curP.getChange().forResource(), curResource);
-				if (!curP.getChange().forResource().equals(curResource)) {
-					
-					curP.getChange().transfer(trf);
-				}
-				String indexStr = ""+ind;
-				quickfixes.addChange(indexStr, curP);
-				boolean addBasicId = true;
-				
-				
-				for (FixAttemptReference ref: curP.getChange().getFixReferences()) {
-					EObject eobj = ref.forObject();
-					if (eobj == null) {continue;}
-					URIBasedEcoreTransferFunction utf = new URIBasedEcoreTransferFunction(eobj.eResource(), mainResource);
-					EObject displayForObj = utf.forward(eobj);
-					if (ref instanceof FixAttemptFeatureReference) {
-						FixAttemptFeatureReference fref = (FixAttemptFeatureReference)ref;
-						info("Possible improvement: "+-curP.getCurQuality()+" Constraints violated, "+curP.getCosts()+" costs",
-								displayForObj,fref.getFeature(),fref.getValueIndex(),"DYNISSUE_ANY_GENETIC_"+indexStr,validatorId,idStr,indexStr);
-					} else {
-						info("Possible improvement: "+-curP.getCurQuality()+" Constraints violated, "+curP.getCosts()+" costs",
-								displayForObj,null,"DYNISSUE_ANY_GENETIC_"+indexStr,validatorId,idStr,indexStr);
+								synchronized (paretoFront) {
+									paretoFront.removeIf((x)->(x.getCosts()>=curCosts && x.getCurQuality() <= -localErrorRemaining && (Double)x.getQuality() <= fixedConstraints));
+									paretoFront.add(ret);
+									notifySolutionFound();
+								}
+								
+								
+								return ret;
+							}
+						});
 					}
+				if (search != null) {
+					search.setResource(curResource);
+					search.changedSomething();
 				}
-				++ind;
+				List<Proposal<?, ?>> curList = new ArrayList<Proposal<?,?>>();
+				synchronized(paretoFront) {
+					curList.addAll(paretoFront);
+				}
+				String idStr = "GENETIC_"+advanceId();
+				ExpressionQuickfixInfo quickfixes = getQuickfixes(idStr);
+				
+				
+				
+				Evaluation wrapper = new Evaluation();
+				for (Proposal<?, ?> curP: curList) {
+					
+					
+					EcoreTransferFunction etf = search.getContainer().pullResource();
+					if (!curP.getChange().forResource().equals(etf.backResource())) {
+						EcoreTransferFunction trf = new URIBasedEcoreTransferFunction(curP.getChange().forResource(), etf.backResource());
+						curP.getChange().transfer(trf);
+					}
+					
+					//-violated constraints currently, costs, resolved constraints, removed violations, removed fulfilled, added constraints, added fulfilled, invalidated constraints
+					curP.getChange().checkChange();
+					Change<?> transfered = curP.getChange().transfered(etf);
+					double[] costs = new ViolatedConstraintsEvaluator().evaluate(transfered, wrapper);
+				
+					search.getContainer().pushResource(etf);
+					curP.setCurQuality(costs[2]);
+					((Proposal<Double,?>)curP).setQuality(costs[0]);
+					curP.setCosts(costs[1]);
+				}
+				
+				curList.removeIf((x)->x.getCurQuality()<= 0);
+				synchronized (paretoFront) {
+					paretoFront.removeIf((x)->x.getCurQuality()<= 0);
+				}
+				
+			
+				int ind = 0;
+				for (Proposal<?, ?> curP: curList) {
+					EcoreTransferFunction trf = new URIBasedEcoreTransferFunction(curP.getChange().forResource(), curResource);
+					if (!curP.getChange().forResource().equals(curResource)) {
+						
+						curP.getChange().transfer(trf);
+					}
+					String indexStr = ""+ind;
+					quickfixes.addChange(indexStr, curP);
+					boolean addBasicId = true;
+					
+					
+					for (FixAttemptReference ref: curP.getChange().getFixReferences()) {
+						EObject eobj = ref.forObject();
+						if (eobj == null) {continue;}
+						URIBasedEcoreTransferFunction utf = new URIBasedEcoreTransferFunction(eobj.eResource(), mainResource);
+						EObject displayForObj = utf.forward(eobj);
+						if (ref instanceof FixAttemptFeatureReference) {
+							FixAttemptFeatureReference fref = (FixAttemptFeatureReference)ref;
+							info("Possible improvement: "+-curP.getCurQuality()+" Constraints violated, "+curP.getCosts()+" costs",
+									displayForObj,fref.getFeature(),fref.getValueIndex(),"DYNISSUE_ANY_GENETIC_"+indexStr,validatorId,idStr,indexStr);
+						} else {
+							info("Possible improvement: "+-curP.getCurQuality()+" Constraints violated, "+curP.getCosts()+" costs",
+									displayForObj,null,"DYNISSUE_ANY_GENETIC_"+indexStr,validatorId,idStr,indexStr);
+						}
+					}
+					++ind;
+				}
+	 		
 			}
- 		
 		}
+	
 	}
 	
 	@Check(CheckType.NORMAL)
@@ -503,6 +520,7 @@ public class DynamicValidator extends org.eclipse.xtext.validation.AbstractDecla
 					}
 				}
 				
+				
 				double originalQuality = state.getQuality();
 				
 				final SimpleStream<Change<?>>  stream = SimpleStream.getStream((oc,nc,evals)
@@ -539,7 +557,7 @@ public class DynamicValidator extends org.eclipse.xtext.validation.AbstractDecla
 								curChange[1].add(nc);
 							}
 
-							Proposal<Double,?> prop = new ProposalImpl<>(nc);
+							Proposal<Double,?> prop = new ProposalImpl<>(Source.LOCAL,nc);
 							prop.setCurQuality(resolved);
 							prop.setQuality(changeEval);
 							prop.setCosts(costs);
@@ -598,6 +616,11 @@ public class DynamicValidator extends org.eclipse.xtext.validation.AbstractDecla
 	
 	public void notifySolutionFound() {
 		System.out.println("Quickfixes should be refreshed!");
+		/*if (mainResource instanceof XtextResource)  {
+			XtextResource xr = (XtextResource)mainResource;
+			xr.getResourceServiceProvider().getResourceValidator().validate(xr, CheckMode.FAST_ONLY, CancelIndicator.NullImpl);
+		}*/
+
 	}
 
 	public MyResource getResource() {

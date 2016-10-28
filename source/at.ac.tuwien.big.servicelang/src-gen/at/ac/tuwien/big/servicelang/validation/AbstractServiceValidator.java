@@ -7,8 +7,9 @@ import java.util.ArrayList;
 import java.util.List;
 import org.eclipse.emf.ecore.EPackage;
 
+import at.ac.tuwien.big.autoedit.xtext.DynamicValidator;
 
-public class AbstractServiceValidator extends at.ac.tuwien.big.autoedit.xtext.DynamicValidator {
+public class AbstractServiceValidator extends DynamicValidator {
 
 	@Override
 	protected List<EPackage> getEPackages() {

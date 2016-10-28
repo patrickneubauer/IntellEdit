@@ -795,6 +795,9 @@ public class MyResource {
 	}
 	
 	public MyResource clone(Copier copier) {
+		if (res.get() == null) {
+			return this;
+		}
 		Resource newResource = new ResourceImpl();
 		newResource.setURI(getResource().getURI());
 		/*for (EObject eobj: (Iterable<EObject>)()->getResource().getAllContents()) {

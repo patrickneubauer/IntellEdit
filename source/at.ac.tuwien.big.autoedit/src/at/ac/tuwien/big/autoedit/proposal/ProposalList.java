@@ -19,4 +19,6 @@ public interface ProposalList<T extends Comparable<T>, U extends Proposal<T,U>> 
 	
 	public void setMaxProposals(int proposals);
 
+	public boolean isEmpty();
+
 }

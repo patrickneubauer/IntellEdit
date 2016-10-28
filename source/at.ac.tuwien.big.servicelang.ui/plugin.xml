@@ -3,6 +3,106 @@
 
 <plugin>
 
+
+  <extension
+         point="org.eclipse.ui.editors.markerAnnotationSpecification" id="00_firstload">
+      <specification
+      		icon="icons/marker.png"
+      		quickFixIcon="icons/marker.png"
+            annotationImageProvider="at.test.MyAnnotationImageProvider"
+            annotationType="org.eclipse.xtext.ui.editor.error"
+            includeOnPreferencePage="true"
+            symbolicIcon="error">
+      </specification>
+      <specification
+      		icon="icons/marker.png"
+      		quickFixIcon="icons/marker.png"
+            annotationImageProvider="at.test.MyAnnotationImageProvider"
+            annotationType="org.eclipse.ui.workbench.texteditor.error"
+            includeOnPreferencePage="true"
+            symbolicIcon="error">
+      </specification>
+      <specification
+      		icon="icons/marker.png"
+      		quickFixIcon="icons/marker.png"
+            annotationImageProvider="at.test.MyAnnotationImageProvider"
+            annotationType="org.eclipse.xtext.ui.editor.warning"
+            includeOnPreferencePage="true"
+            symbolicIcon="warning">
+      </specification>
+      <specification
+      		icon="icons/marker.png"
+      		quickFixIcon="icons/marker.png"
+            annotationImageProvider="at.test.MyAnnotationImageProvider"
+            annotationType="org.eclipse.xtext.ui.editor.info"
+            includeOnPreferencePage="true"
+            symbolicIcon="info">
+      </specification>
+   </extension>
+   
+   <!--extension
+         id="my.marker"
+         name="Testing marker"
+         point="org.eclipse.core.resources.markers">
+         <super type="org.eclipse.core.resources.textmarker"/>
+         <persistent value="true"/>
+   </extension>
+   <extension
+   		 id="my.annotationType"
+   		 name="Testing marker Annotation"
+         point="org.eclipse.ui.editors.annotationTypes">
+      <type
+            markerType="my.marker"
+            name="my.annotationType">
+      </type>
+   </extension>
+	<extension
+         point="org.eclipse.ui.editors.markerAnnotationSpecification"
+         id="my.annotationSpec">
+         <super type="org.eclipse.core.resources.textmarker"/>
+      <specification
+              annotationImageProvider="at.test.MyAnnotationImageProvider"
+          annotationType="my.annotationType"
+            includeOnPreferencePage="true"
+            overviewRulerPreferenceKey="clruler"
+            label="Testing"
+            icon="icons/marker.png"
+			overviewRulerPreferenceValue="true"
+			highlightPreferenceKey="highlight.background"
+			highlightPreferenceValue="true"
+			colorPreferenceKey="clcolor"
+			colorPreferenceValue="0,255,0"
+			textPreferenceKey="cltext"
+			textPreferenceValue="true"
+			presentationLayer="0"
+			verticalRulerPreferenceKey="clvertical"
+			verticalRulerPreferenceValue="true"
+			textStylePreferenceKey="clstyle"
+			textStylePreferenceValue="BOX">
+      </specification>
+            <specification
+             annotationImageProvider="at.test.MyAnnotationImageProvider"
+             annotationType="org.eclipse.xtext.ui.editor.error"
+            includeOnPreferencePage="true"
+            overviewRulerPreferenceKey="clruler"
+            label="Testing"
+            icon="icons/marker.png"
+			overviewRulerPreferenceValue="true"
+			highlightPreferenceKey="highlight.background"
+			highlightPreferenceValue="true"
+			colorPreferenceKey="clcolor"
+			colorPreferenceValue="0,255,0"
+			textPreferenceKey="cltext"
+			textPreferenceValue="true"
+			presentationLayer="0"
+			verticalRulerPreferenceKey="clvertical"
+			verticalRulerPreferenceValue="true"
+			textStylePreferenceKey="clstyle"
+			textStylePreferenceValue="BOX">
+      </specification>
+   </extension-->
+
+
     <extension
             point="org.eclipse.ui.editors">
         <editor
@@ -421,5 +521,5 @@
             type="text">
     </fileTypes>
   </extension>
-
+  
 </plugin>

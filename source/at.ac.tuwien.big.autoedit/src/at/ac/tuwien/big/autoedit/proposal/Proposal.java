@@ -8,6 +8,12 @@ import at.ac.tuwien.big.autoedit.transfer.EcoreTransferFunction;
 
 public interface Proposal<T extends Comparable<T>, U extends Proposal<T,U>>  extends Comparable<U> {
 	
+	public enum Source {
+		LOCAL,GENETIC
+	}
+	
+	public Source getSource();
+	
 	public Change<?> getChange();
 	
 	public T getQuality();
@@ -18,8 +24,8 @@ public interface Proposal<T extends Comparable<T>, U extends Proposal<T,U>>  ext
 	
 	public void setCurQuality(double quality);
 	
-	public static<T extends Comparable<T>> ProposalImpl<T> fromChange(Change<?> ch) {
-		return new ProposalImpl<T>(ch);
+	public static<T extends Comparable<T>> ProposalImpl<T> fromChange(Source source, Change<?> ch) {
+		return new ProposalImpl<T>(source,ch);
 	}
 	/*
 	public default void revalidateIfNecessary() {

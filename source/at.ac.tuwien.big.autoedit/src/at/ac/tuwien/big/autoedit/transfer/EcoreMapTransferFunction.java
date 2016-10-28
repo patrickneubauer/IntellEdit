@@ -13,6 +13,7 @@ import org.eclipse.emf.ecore.impl.EObjectImpl;
 import org.eclipse.emf.ecore.impl.MinimalEObjectImpl;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.util.EcoreUtil;
+import org.jfree.chart.plot.IntervalMarker;
 
 import at.ac.tuwien.big.autoedit.ecore.util.MyEcoreUtil;
 

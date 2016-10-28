@@ -5,14 +5,25 @@ import at.ac.tuwien.big.autoedit.proposal.Proposal;
 
 public class ProposalImpl<T extends Comparable<T>> implements Proposal<T,ProposalImpl<T>>, Comparable<ProposalImpl<T>> {
 	
-	public ProposalImpl(Change<?> ch) {
+	private Source source;
+	
+	public ProposalImpl(Source source, Change<?> ch) {
 		this.change = ch;
+		this.source = source;
 	}
+	
+	
+	
 	
 	private Change<?> change;
 	private T quality;
 	private double curQuality;
 	private double costs;
+	
+	@Override
+	public Source getSource() {
+		return source;
+	}
 
 	@Override
 	public Change<?> getChange() {

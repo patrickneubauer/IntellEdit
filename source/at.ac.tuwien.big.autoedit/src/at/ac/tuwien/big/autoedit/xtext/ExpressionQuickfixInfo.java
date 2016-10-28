@@ -18,6 +18,7 @@ import org.eclipse.ocl.EvaluationEnvironment;
 import at.ac.tuwien.big.autoedit.change.Change;
 import at.ac.tuwien.big.autoedit.proposal.Proposal;
 import at.ac.tuwien.big.autoedit.proposal.ProposalList;
+import at.ac.tuwien.big.autoedit.proposal.Proposal.Source;
 import at.ac.tuwien.big.autoedit.proposal.impl.ProposalImpl;
 import at.ac.tuwien.big.autoedit.proposal.impl.ProposalListImpl;
 import at.ac.tuwien.big.autoedit.search.local.LocalSearchInterface;
@@ -55,9 +56,10 @@ public  class ExpressionQuickfixInfo<T extends Comparable<T>> {
 				str = Change.costToInvisible(((Number)prop.getQuality()).doubleValue(), false);
 			}
 			String invisibleString = Change.costToInvisible(prop.getCurQuality(), false)+str+Change.costToInvisible(prop.getCosts(),true);
+			String imageStr = prop.getSource()==Source.LOCAL?QuickfixReferenceImpl.LOCAL_IMAGE:QuickfixReferenceImpl.GENETIC_IMAGE;
 			ret.add(new QuickfixReferenceImpl(change.getName(contextUri),
 				change.toString(contextUri)+", Local-Score: " + prop.getCurQuality()+", Score: " + prop.getQuality()+", Cost "+prop.getCosts(), change,
-				new double[]{-prop.getCurQuality(),-(Double)prop.getQuality(),prop.getCosts()}));
+				new double[]{-prop.getCurQuality(),-(Double)prop.getQuality(),prop.getCosts()},imageStr));
 		}
 		return ret;
 	}
@@ -116,6 +118,14 @@ public  class ExpressionQuickfixInfo<T extends Comparable<T>> {
 				searches[i].abortSearch();
 			}
 		}
+	}
+
+	public boolean hasAnyChanges() {
+		boolean ret = false;
+		for (ProposalList list: subIdToChangeMap.values()) {
+			ret|= list.iterator().hasNext();
+		}
+		return ret;
 	}
 
 }

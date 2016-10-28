@@ -2,6 +2,8 @@ package at.ac.tuwien.big.autoedit.xtext;
 
 import java.util.Objects;
 
+import org.eclipse.xtext.ui.editor.model.XtextMarkerAnnotationImageProvider;
+
 import at.ac.tuwien.big.autoedit.change.Change;
 
 public class QuickfixReferenceImpl implements QuickfixReference {
@@ -10,12 +12,18 @@ public class QuickfixReferenceImpl implements QuickfixReference {
 	private String description;
 	private Change<?> change;
 	private double[] compareValues;
+	private String image;
 	
-	public QuickfixReferenceImpl(String name, String description, Change<?> change, double[] compareValues) {
+	public static final String GENETIC_IMAGE = "redstar.png";
+	public static final String LOCAL_IMAGE = "star.png";
+	
+	public QuickfixReferenceImpl(String name, String description, Change<?> change, double[] compareValues, String image) {
 		this.name = name;
 		this.description = description;
 		this.change = change;
 		this.compareValues = compareValues;
+		this.image = image;
+		
 	}
 
 	@Override
@@ -31,6 +39,11 @@ public class QuickfixReferenceImpl implements QuickfixReference {
 	@Override
 	public String getName() {
 		return name;
+	}
+	
+	@Override
+	public String getImage() {
+		return image;
 	}
 	
 	public int hashCode() {
