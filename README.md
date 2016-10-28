@@ -1,4 +1,5 @@
 # Automated Generation of Consistency-Achieving Model Editors with IntellEdit
+![Logo](http://intelledit.big.tuwien.ac.at/img/IntellEditLogo.svg)
 
 The advances of domain-specific modeling languages (DSMLs) and their editors, created with modern language workbenches, have convinced domain experts of applying them as important and powerful means in their daily endeavors. 
 
@@ -15,7 +16,7 @@ We illustrate and provide an initial evaluation of our approach based on an Xtex
 
 See also [IntellEdit Project Website](http://intelledit.big.tuwien.ac.at).
 
-#### How to run
+#### How to run 
 
 After importing all projects in Eclipse, you have to do the following steps:
 
