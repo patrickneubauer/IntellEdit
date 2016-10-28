@@ -1,3 +1,4 @@
+![Logo](http://intelledit.big.tuwien.ac.at/IntellEditLogo.svg)
 # Automated Generation of Consistency-Achieving Model Editors with IntellEdit
 
 The advances of domain-specific modeling languages (DSMLs) and their editors, created with modern language workbenches, have convinced domain experts of applying them as important and powerful means in their daily endeavors. 
