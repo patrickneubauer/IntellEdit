@@ -16,7 +16,7 @@ We illustrate and provide an initial evaluation of our approach based on an Xtex
 
 See also [IntellEdit Project Website](http://intelledit.big.tuwien.ac.at).
 
-#### How to run
+#### How to run 
 
 After importing all projects in Eclipse, you have to do the following steps:
 
