@@ -26,12 +26,6 @@ import org.osgi.framework.FrameworkUtil;
 import com.google.inject.Binder;
 
 import at.ac.tuwien.big.oclgen.CustomRegistry;
-import javassist.CannotCompileException;
-import javassist.ClassClassPath;
-import javassist.ClassPool;
-import javassist.CtClass;
-import javassist.CtMethod;
-import javassist.NotFoundException;
 
 /**
  * Use this class to register components to be used at runtime / without the Equinox extension registry.

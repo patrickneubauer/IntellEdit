@@ -3,7 +3,6 @@ package at.ac.tuwien.big.autoedit.oclvisit;
 import java.util.List;
 import java.util.Objects;
 
-import org.apache.maven.model.superpom.SuperPomProvider;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EStructuralFeature;
 

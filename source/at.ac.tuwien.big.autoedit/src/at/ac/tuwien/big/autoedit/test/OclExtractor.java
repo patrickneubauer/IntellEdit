@@ -1,6 +1,7 @@
 package at.ac.tuwien.big.autoedit.test;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -21,25 +22,46 @@ import org.eclipse.emf.ecore.EAttribute;
 import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EClassifier;
 import org.eclipse.emf.ecore.EObject;
+import org.eclipse.emf.ecore.EOperation;
 import org.eclipse.emf.ecore.EPackage;
 import org.eclipse.emf.ecore.EReference;
 import org.eclipse.emf.ecore.EStructuralFeature;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.resource.ResourceSet;
+import org.eclipse.emf.ecore.resource.URIConverter;
 import org.eclipse.emf.ecore.resource.impl.ResourceSetImpl;
 import org.eclipse.emf.ecore.util.BasicExtendedMetaData;
+import org.eclipse.emf.ecore.util.EcoreUtil;
 import org.eclipse.emf.ecore.util.ExtendedMetaData;
 import org.eclipse.emf.ecore.xmi.XMLResource;
 import org.eclipse.emf.ecore.xmi.impl.EcoreResourceFactoryImpl;
 import org.eclipse.emf.ecore.xmi.impl.XMIResourceFactoryImpl;
+import org.eclipse.emf.mwe.utils.StandaloneSetup;
 import org.eclipse.ocl.ParserException;
 import org.eclipse.ocl.ecore.OCL;
 import org.eclipse.ocl.ecore.OCLExpression;
 import org.eclipse.ocl.ecore.OCL.Helper;
+import org.eclipse.ocl.ecore.delegate.OCLDelegateDomain;
+import org.eclipse.ocl.ecore.delegate.OCLInvocationDelegateFactory;
+import org.eclipse.ocl.ecore.delegate.OCLSettingDelegateFactory;
 
-import at.ac.tuwien.big.oclgen.OCLBasedQuickfixDefinition;
 
 public class OclExtractor {
+	
+	static {
+		//Just to be able to call everything for OCL
+		new StandaloneSetup().setPlatformUri("./");
+//		CompleteOCLStandaloneSetup.doSetup();
+//		OCLinEcoreStandaloneSetup.doSetup();
+//		OCLstdlibStandaloneSetup.doSetup();
+		String oclDelegateURI = OCLDelegateDomain.OCL_DELEGATE_URI;
+		EOperation.Internal.InvocationDelegate.Factory.Registry.INSTANCE.put(oclDelegateURI,
+			new OCLInvocationDelegateFactory.Global());
+		EStructuralFeature.Internal.SettingDelegate.Factory.Registry.INSTANCE.put(oclDelegateURI,
+			new OCLSettingDelegateFactory.Global());
+		OCL.initialize(null);
+	}
+	
 	
 	public static Map<String,OCLExpression> convertToExpression(Helper oclHelper, EClass context, Map<String,String> map) {
 		Map<String, OCLExpression> expr = new HashMap<String, OCLExpression>();
@@ -73,12 +95,68 @@ public class OclExtractor {
 	public static Map<EClass, Map<String, String>> getAllClassOCLExpressions(Resource ecoreFile) {
 		try {
 			// TODO: we need to somehow pass that as parameter in or extract from registry?
-			EPackage ePackage = (EPackage) Class.forName("at.ac.tuwien.big.forms.FormsPackage").getDeclaredField("eINSTANCE").get(null);
+			EPackage ePackage = (EPackage)ecoreFile.getContents().get(0);
+			/*try {
+				ePackage = (EPackage) Class.forName("at.ac.tuwien.big.forms.FormsPackage").getDeclaredField("eINSTANCE").get(null);
+			} catch (Exception e) {
+				
+			}*/
 			TreeIterator<EObject> iter = ecoreFile.getAllContents();
 			return getAllClassOCLExpressions(iter, ePackage);
 		} catch (Exception ex) {
 			throw new RuntimeException(ex);
 		}
+	}
+	
+	public static Map<EClass, Map<String, OCLExpression>> getAllClassAndSubClassOCLExpressions(Resource ecoreFile) {
+		return getAllClassAndSubclassOCLExpressions(ecoreFile, getAllOCLExpressions(getAllClassOCLExpressions(ecoreFile)));
+	}
+	
+	public static Map<EClass, Map<String, OCLExpression>> getAllClassAndSubclassOCLExpressions(Resource res, Map<EClass, Map<String, OCLExpression>> oclExprs) {
+		Map<EClass,Set<EClass>> subClasses = new HashMap<EClass, Set<EClass>>();
+		 Map<EClass, Map<String, OCLExpression>> ret = new HashMap<EClass, Map<String,OCLExpression>>();
+		for (EObject eobj: (Iterable<EObject>)()->res.getAllContents()) {
+			if (eobj instanceof EClass) {
+				EClass cl = (EClass)eobj;
+				Set<EClass> scl = subClasses.get(cl);
+				if (scl == null){
+					subClasses.put(cl, scl = new HashSet<EClass>());
+				}
+				scl.add(cl);
+				for (EClass supcl: cl.getEAllSuperTypes()) {
+					Set<EClass> scl2 = subClasses.get(supcl);
+					if (scl2 == null){
+						subClasses.put(supcl, scl2 = new HashSet<EClass>());
+					}
+					scl2.add(cl);
+				}
+			}
+		}
+		for (Entry<EClass, Map<String, OCLExpression>> entry: oclExprs.entrySet()) {
+			EClass cl = entry.getKey();
+			for (EClass subCl: subClasses.get(cl)) {
+				Map<String, OCLExpression> subret = ret.get(subCl);
+				if (subret == null) {
+					ret.put(subCl, subret = new HashMap<String, OCLExpression>());
+				}
+				for (Entry<String,OCLExpression> myEntry: entry.getValue().entrySet()) {
+					String name = myEntry.getKey();
+					if (subret.containsKey(name)) {
+						int ind = 1;
+						while (subret.containsKey(name+"_"+ind)) {
+							++ind;
+						}
+						name = name+"_"+ind;
+					}
+					subret.put(name, myEntry.getValue());
+				}
+			}
+		}
+		return ret;
+	}
+	
+	public static Resource getEcore(String ecoreFile) {
+		return getEcore(new File(ecoreFile));
 	}
 	
 	public static Resource getEcore(File ecoreFile) {
@@ -95,14 +173,31 @@ public class OclExtractor {
 		final ExtendedMetaData extendedMetaData = new BasicExtendedMetaData(resourceSet.getPackageRegistry());
 		resourceSet.getLoadOptions().put(XMLResource.OPTION_EXTENDED_META_DATA, extendedMetaData);
 
-		Resource ecoreResource = resourceSet.getResource(URI.createFileURI(ecoreFile.getAbsolutePath()), true);
+		Resource ecoreResource = resourceSet.getResource(resourceSet.getURIConverter().normalize(URI.createFileURI(ecoreFile.getAbsolutePath())), true);
+		for (EObject eobj: (Iterable<EObject>)()->ecoreResource.getAllContents()) {
+			if (eobj instanceof EPackage) {
+				resourceSet.getPackageRegistry().put(((EPackage) eobj).getNsURI(), eobj);
+			}
+		}
 		return ecoreResource;
 	}
 	
+	public static Resource getXMI(String xmiFile, Resource ecoreRes) {
+		return getXMI(new File(xmiFile), ecoreRes);
+	}
+	
 	public static Resource getXMI(File xmiFile, Resource ecoreRes) {
-		Resource xmiResource = ecoreRes.getResourceSet().getResource(URI.createFileURI(xmiFile.getAbsolutePath()), true);
+		Resource xmiResource = null;
+		try {
+			xmiResource = ecoreRes.getResourceSet().getResource(ecoreRes.getResourceSet().getURIConverter().normalize(URI.createFileURI(xmiFile.getCanonicalPath())), true);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
 		return xmiResource;
 	}
+	
 	
 	public static Map<String, String> getConstraintMap(EClass eclass) {
 		Map<String, String> constraintMap = new TreeMap<String, String>();
@@ -125,6 +220,14 @@ public class OclExtractor {
 				if (constraintName == null || "".equals(constraintName)) {
 					constraintName = "Constraint" + constraintNr;
 				}
+				if (constraintMap.containsKey(constraintName)) {
+					int ind = 1;
+					while (constraintMap.containsKey(constraintName+"_"+ind)) {
+						++ind;
+					}
+					constraintName = constraintMap+"_"+ind;
+				}
+				constraintName = eclass.getName()+"."+constraintName;
 				constraintMap.put(constraintName, oclExpr);
 				++constraintNr;
 			}

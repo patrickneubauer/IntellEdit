@@ -3,6 +3,7 @@ package at.ac.tuwien.big.autoedit.change;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.AbstractList;
 import java.util.ArrayList;
@@ -18,9 +19,14 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.WeakHashMap;
 
+import org.eclipse.emf.common.util.TreeIterator;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.jface.text.BadLocationException;
+import org.eclipse.xtext.nodemodel.INode;
+import org.eclipse.xtext.nodemodel.util.NodeModelUtils;
+import org.eclipse.xtext.parser.IParseResult;
+import org.eclipse.xtext.parser.IParser;
 import org.eclipse.xtext.resource.XtextResource;
 import org.eclipse.xtext.ui.editor.XtextEditor;
 import org.eclipse.xtext.ui.editor.model.IXtextDocument;
@@ -70,14 +76,40 @@ public interface Change<Type extends Change<Type>> {
 		executeRemoveEmpty().undo();
 	}
 	
+	public default void testSerialize(org.eclipse.xtext.serializer.ISerializer serializer, IParser parser) {
+		Resource ores = forResource();
+		synchronized(serializer) {					
+			for (EObject eobj: ores.getContents()) {
+				INode node = NodeModelUtils.getNode(eobj);
+				System.out.println("Previous: " + node);
+				String str = serializer.serialize(eobj);
+				IParseResult res = parser.parse(new StringReader(str));
+				EObject compare = res.getRootASTElement();
+				TreeIterator<EObject> compareIter = eobj.eAllContents();
+				for (EObject cont: (Iterable<EObject>)()->compare.eAllContents()) {
+					INode my = NodeModelUtils.getNode(cont);
+					System.out.println("My node: "+my);
+					EObject sameNode = compareIter.next();
+					System.out.println("Objects " + cont+ " VS "+sameNode);
+					INode otherNode = NodeModelUtils.getNode(sameNode);
+					System.out.println("Other node : "+otherNode);
+				}
+				System.out.println("After: " + node);
+			}
+		}
+	}
+	
 	public default boolean canBeQuickfixApplied(org.eclipse.xtext.serializer.ISerializer serializer) {
 		try {
 			Undoer undoer = execute();
 			try {
 				Resource ores = forResource();
-				synchronized(serializer) {
+				synchronized(serializer) {					
 					for (EObject eobj: ores.getContents()) {
+						INode node = NodeModelUtils.getNode(eobj);
+						System.out.println("Previous: " + node);
 						serializer.serialize(eobj);
+						System.out.println("After: " + node);
 					}
 				}
 			} catch (Exception e) {

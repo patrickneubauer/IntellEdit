@@ -130,6 +130,42 @@ public class MyEcoreUtil {
 		}
 	}
 	
+	public static EObject newInstance(EClass from) {
+		EObject ret = null;
+		if (from.getInstanceClass() != null) {
+			Class<?> cl = from.getInstanceClass();
+			try {
+				Constructor<?> con = cl.getDeclaredConstructor();
+				con.setAccessible(true);
+				ret = (EObject)con.newInstance();
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} 
+		} else {
+			ret = new DynamicEObjectImpl(from);
+		}
+		return ret;
+	}
+	
+	public static EObject newInstance(EObject from) {
+		EObject ret = null;
+		if (from instanceof DynamicEObjectImpl) {
+			ret = new DynamicEObjectImpl(from.eClass());
+		} else {
+			Class<?> cl = from.getClass();
+			try {
+				Constructor<?> con = cl.getDeclaredConstructor();
+				con.setAccessible(true);
+				ret = (EObject)con.newInstance();
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} 
+		}
+		return ret;
+	}
+	
 	
 	public static EObject nearCopy(EObject from, Map<EObject,EObject> map) {
 		EObject ret = map.get(from);
@@ -137,19 +173,7 @@ public class MyEcoreUtil {
 			return ret;
 		}
 		if (ret == null) {
-			if (from instanceof DynamicEObjectImpl) {
-				ret = new DynamicEObjectImpl(from.eClass());
-			} else {
-				Class<?> cl = from.getClass();
-				try {
-					Constructor<?> con = cl.getDeclaredConstructor();
-					con.setAccessible(true);
-					ret = (EObject)con.newInstance();
-				} catch (Exception e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} 
-			}
+			ret = newInstance(from);
 			map.put(from,ret);
 			EObject cont = from.eContainer();
 			if (cont != null) {
@@ -370,6 +394,19 @@ public class MyEcoreUtil {
 			return getEObjName((EObject)value);
 		}
 		return String.valueOf(value);
+	}
+
+
+	public static EObject fakeCast(EObject targetEl, EObject srcEl) {
+		EObject ret = newInstance(srcEl);
+		//Copy same features
+		for (EStructuralFeature esf: srcEl.eClass().getEAllStructuralFeatures()) {
+			//You can copy the feature if the new class has existed in the old class
+			if (esf.getEContainingClass().isSuperTypeOf(targetEl.eClass())) {
+				ret.eSet(esf,targetEl.eGet(esf));
+			}
+		}
+		return ret;
 	}
 }
 

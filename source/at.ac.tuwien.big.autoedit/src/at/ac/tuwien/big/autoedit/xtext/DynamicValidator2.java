@@ -69,7 +69,7 @@ import at.ac.tuwien.big.autoedit.transfer.EcoreTransferFunction;
 import at.ac.tuwien.big.autoedit.transfer.URIBasedEcoreTransferFunction;
 import jmetal.util.comparators.ViolatedConstraintComparator;
 
-public class DynamicValidator extends org.eclipse.xtext.validation.AbstractDeclarativeValidator implements DynamicValidatorIFace{
+public class DynamicValidator2 extends org.eclipse.xtext.validation.AbstractDeclarativeValidator implements DynamicValidatorIFace{
 
 	
 	private static final long MIN_MS_BETWEEN_QUICKFIX_CALLS = 500;
@@ -223,7 +223,7 @@ public class DynamicValidator extends org.eclipse.xtext.validation.AbstractDecla
 		return ret;
 	}
 
-	private long uniqueId = 0;
+	private long uniqueÍd = 0;
 	
 	private WeakHashMap<Resource, Collection<Change<?>>[]> quickfixChanges = new WeakHashMap<>(); 
 	
@@ -397,11 +397,11 @@ public class DynamicValidator extends org.eclipse.xtext.validation.AbstractDecla
 	@Check(CheckType.NORMAL)
 	public synchronized void checkAllExpressions(EObject theRealObj) {
 		
-		long myIdU = uniqueId;
+		long myIdU = uniqueÍd;
 		if (theRealObj.eContainer() == null) {
 			synchronized (this) {
-				++uniqueId;
-				myIdU = uniqueId; 
+				++uniqueÍd;
+				myIdU = uniqueÍd; 
 			}
 			
 		}
@@ -516,7 +516,7 @@ public class DynamicValidator extends org.eclipse.xtext.validation.AbstractDecla
 				}
 				if (!fileCheck) {
 					if (!otherIssueDesc.isEmpty()) {
-						error("Other file issues: " + otherIssueDesc, theObj, null, -1, "DYNISSUE_ANY_"+uniqueId,validatorId,evalIdBase,"");
+						error("Other file issues: " + otherIssueDesc, theObj, null, -1, "DYNISSUE_ANY_"+uniqueÍd,validatorId,evalIdBase,"");
 					}
 				}
 				
@@ -536,11 +536,6 @@ public class DynamicValidator extends org.eclipse.xtext.validation.AbstractDecla
 							double costs = changeEvals[1];
 							if (GlobalSearch.FILTER_GRAMMAR_ERROR && changeEvals[ViolatedConstraintsEvaluator.GRAMMAR_ERRORS] > 0.0) {
 								return null;
-							}
-							
-							if (mainResource instanceof XtextResource) {
-								XtextResource xres = (XtextResource)mainResource;
-								oc.testSerialize(xres.getSerializer(), xres.getParser());
 							}
 							
 							if (mainResource instanceof XtextResource && DynamicValidator.PREFILTER_CHANGES && !oc.canBeQuickfixApplied(((XtextResource)mainResource).getSerializer())) {

@@ -2,6 +2,7 @@ package at.tuwien.big.virtmod.datatype;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -11,6 +12,7 @@ import java.util.Set;
 import org.eclipse.emf.common.util.TreeIterator;
 import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EObject;
+
 
 import java.util.Map.Entry;
 
@@ -138,6 +140,11 @@ public class IteratorUtils {
 			public Y next() {
 				return func.applyTo(x.next());
 			}
+			
+			@Override
+			public void remove() {
+				x.remove();
+			}
 		};
 	}
 	
@@ -261,6 +268,12 @@ public class IteratorUtils {
 			}
 			return multiIterator(iters);
 		};
+	}
+	
+
+
+	public static<X> Iterable<X> shallowUnionCol(Collection<List<X>> values) {
+		return shallowUnion(new ArrayList<>(values).toArray(new List[]{}));
 	}
 
 	public static<T, U extends T> Iterator<U> filterType(Iterator<? extends T> allContents, Class<U> class1) {
