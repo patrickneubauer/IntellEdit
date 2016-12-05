@@ -75,10 +75,10 @@ public class DynamicProposalProvider extends TerminalsProposalProvider {
 		
 		EcoreUtil.Copier copier = new EcoreUtil.Copier();
 		MyResource originalRes = myRes;
-		MyResource clonedRes = originalRes.clone(copier);
+		Resource clonedRes = originalRes.clone(copier);
 		EObject context = copier.get(curObj);
 		EcoreTransferFunction transferFunc = new EcoreMapTransferFunction(originalRes.getResource(),
-				clonedRes.getResource(), copier);
+				clonedRes, copier);
 		ViolatedConstraintsEvaluator eval = new ViolatedConstraintsEvaluator();
 		
 		EAttribute attr = (EAttribute)feat;
@@ -98,7 +98,7 @@ public class DynamicProposalProvider extends TerminalsProposalProvider {
 			if (++fullValueTries > MAX_VALUE_FULLTRIES) {
 				break;
 			}
-			double quality[] = eval.evaluate(new BasicSetConstantChange(clonedRes.getResource(),context,attr,o),wr);
+			double quality[] = eval.evaluate(new BasicSetConstantChange(clonedRes,context,attr,o),wr);
 			map.put(o,quality);
 		}
 		List<Object> possible = new ArrayList<>();

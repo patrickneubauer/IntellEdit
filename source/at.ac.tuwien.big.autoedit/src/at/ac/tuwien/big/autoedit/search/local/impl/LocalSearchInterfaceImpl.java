@@ -117,9 +117,13 @@ public class LocalSearchInterfaceImpl implements LocalSearchInterface {
 		
 	}
 	
+	private Resource clonedResRes; 
+	
 	public void initResourceCopy(MyResource res, EObject context) {
 		copier = new EcoreUtil.Copier();
-		this.clonedRes = res.clone(copier);
+		
+		this.clonedResRes = res.clone(copier);
+		this.clonedRes = MyResource.get(this.clonedResRes);
 		this.context = copier.get(context);
 		this.originalRes = new WeakReference<MyResource>(res);
 		transferFunc = new EcoreMapTransferFunction(originalRes.get().getResource(),
@@ -348,7 +352,7 @@ public class LocalSearchInterfaceImpl implements LocalSearchInterface {
 			}
 		}
 		Copier newCopier = new EcoreUtil.Copier();
-		MyResource oldBase = clonedRes.clone(newCopier);
+		Resource oldBase = clonedRes.clone(newCopier);
 		try {
 		while (!curSolutions.isEmpty()) {
 			if (abort || new Date().getTime() >= endTime) {
@@ -490,8 +494,8 @@ public class LocalSearchInterfaceImpl implements LocalSearchInterface {
 					undoers.get(i).undo();
 				}
 			}
-			if (!clonedRes.equals(oldBase, new EcoreMapTransferFunction(clonedRes.getResource(),
-					oldBase.getResource(), newCopier))) {
+			if (!clonedRes.equals(MyResource.get(oldBase), new EcoreMapTransferFunction(clonedRes.getResource(),
+					oldBase, newCopier))) {
 				System.err.println("....");
 			}
 		}

@@ -46,10 +46,11 @@ public class BasicChangeTest {
 			gen.populate(generated);
 			MyResource res = MyResource.get(generated);
 			EcoreUtil.Copier copier = new EcoreUtil.Copier();
-			MyResource cloned = res.clone(copier);
-			EcoreTransferFunction etf = new EcoreMapTransferFunction(res.getResource(), cloned.getResource(), copier);
-			etf = new URIBasedEcoreTransferFunction(res.getResource(), cloned.getResource());
-			if (!res.equals(cloned,etf)) {
+			Resource[] resAr = new Resource[1];
+			Resource cloned = res.clone(copier);
+			EcoreTransferFunction etf = new EcoreMapTransferFunction(res.getResource(), cloned, copier);
+			etf = new URIBasedEcoreTransferFunction(res.getResource(), cloned);
+			if (!res.equals(MyResource.get(cloned),etf)) {
 				System.err.println("Clone error!!");
 			}
 			
@@ -62,7 +63,7 @@ public class BasicChangeTest {
 					System.out.print("Trying " + ch+" ==> ");
 					Undoer ud = ch.transfered(etf).execute();
 					ud.undo();
-					if (!res.equals(cloned,etf)) {
+					if (!res.equals(MyResource.get(cloned),etf)) {
 						System.out.println("ERROR");
 						Map<Object,Object> options = new HashMap<Object, Object>();
 						options.put(XMIResource.SCHEMA_LOCATION, true);

@@ -12,6 +12,8 @@
             annotationImageProvider="at.test.MyAnnotationImageProvider"
             annotationType="org.eclipse.xtext.ui.editor.error"
             includeOnPreferencePage="true"
+            textPreferenceKey="errorIndication"
+            textPreferenceValue="true"
             symbolicIcon="error">
       </specification>
       <specification
@@ -25,6 +27,8 @@
       <specification
       		icon="icons/marker.png"
       		quickFixIcon="icons/marker.png"
+            textPreferenceKey="warningIndication"
+            textPreferenceValue="true"
             annotationImageProvider="at.test.MyAnnotationImageProvider"
             annotationType="org.eclipse.xtext.ui.editor.warning"
             includeOnPreferencePage="true"
@@ -36,6 +40,10 @@
             annotationImageProvider="at.test.MyAnnotationImageProvider"
             annotationType="org.eclipse.xtext.ui.editor.info"
             includeOnPreferencePage="true"
+            textPreferenceKey="infoIndication"
+            textPreferenceValue="true"
+            textStylePreferenceKey="warningTextStyle"
+            textStylePreferenceValue="BOX"
             symbolicIcon="info">
       </specification>
    </extension>

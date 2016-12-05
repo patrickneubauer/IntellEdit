@@ -28,6 +28,7 @@ import at.ac.tuwien.big.autoedit.oclvisit.fixinggenerators.PropagateBooleanChang
 import at.ac.tuwien.big.autoedit.oclvisit.fixinggenerators.PropagateCollectChanges;
 import at.ac.tuwien.big.autoedit.oclvisit.fixinggenerators.PropagateEqualChanges;
 import at.ac.tuwien.big.autoedit.oclvisit.fixinggenerators.PropagateIteratorChanges;
+import at.ac.tuwien.big.autoedit.oclvisit.fixinggenerators.PropagatePropertyCallExp;
 import at.ac.tuwien.big.autoedit.oclvisit.fixinggenerators.PropagateSetChanges;
 import at.ac.tuwien.big.autoedit.oclvisit.fixinggenerators.PropagateSetRelationChanges;
 import at.ac.tuwien.big.autoedit.oclvisit.fixinggenerators.PropagateSmallerNumberChanges;
@@ -99,6 +100,7 @@ public class RejectingFilterManager {
 		addFixingGenerator(PropagateCollectChanges.INSTANCE);
 		addFixingGenerator(PropagateIteratorChanges.EXISTS);
 		addFixingGenerator(PropagateIteratorChanges.FORALL);
+		addFixingGenerator(PropagatePropertyCallExp.INSTANCE);
 		addFixingGenerator(PropagateSmallerNumberChanges.GREATER);
 		addFixingGenerator(PropagateSmallerNumberChanges.GREATEREQUAL);
 		addFixingGenerator(PropagateSmallerNumberChanges.SMALLER);

@@ -67,7 +67,7 @@ public class CompositeChangeImpl implements Change<CompositeChangeImpl>{
 	}
 
 	@Override
-	public Iterable<? extends Change<?>> getSubChanges() {
+	public List<Change<?>> getSubChanges() {
 		return subChanges;
 	}
 

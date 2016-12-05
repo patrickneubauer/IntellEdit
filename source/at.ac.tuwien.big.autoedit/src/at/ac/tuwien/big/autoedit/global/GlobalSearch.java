@@ -4,11 +4,13 @@ import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.Random;
 import java.util.Stack;
 
 import org.eclipse.emf.ecore.resource.Resource;
+import org.eclipse.emf.ecore.util.EcoreUtil.Copier;
 import org.moeaframework.Executor;
 import org.moeaframework.core.Problem;
 import org.moeaframework.core.Solution;
@@ -27,6 +29,7 @@ import at.ac.tuwien.big.autoedit.search.local.SimpleStream;
 import at.ac.tuwien.big.autoedit.search.local.impl.Evaluation;
 import at.ac.tuwien.big.autoedit.search.local.impl.ResourceEvaluator;
 import at.ac.tuwien.big.autoedit.search.local.impl.ViolatedConstraintsEvaluator;
+import at.ac.tuwien.big.autoedit.transfer.EcoreMapTransferFunction;
 import at.ac.tuwien.big.autoedit.transfer.EcoreTransferFunction;
 import at.ac.tuwien.big.autoedit.transfer.URIBasedEcoreTransferFunction;
 import at.ac.tuwien.big.autoedit.xtext.DynamicValidator;
@@ -129,7 +132,7 @@ public class GlobalSearch {
 		
 		this.valid = valid;
 		this.stream = stream;
-		setResource(resource);
+		setResource(resource.getResource());
 	}
 	
 	public Resource getResource() {
@@ -138,20 +141,32 @@ public class GlobalSearch {
 	
 	private MyResourceContainer container;
 	
+	private Resource clone;
+	private Copier copier;
+	
 	public MyResourceContainer getContainer() {
 		return container;
 	}
 	
-	public void setResource(MyResource res) {
+	public void setResource(Resource res) {
 		try {
 		/*if (resource != null && resource.equals(res)) {
 			return;
 		}*/
-		
-		this.resource = res.getResource();
-		this.container = new MyResourceContainer(res.clone());
-		abortSearch();
-		startSearch();
+		if (this.clone != null) {
+			if (MyResource.get(res).equalsRes(MyResource.get(clone))) {
+				if (res == this.resource) {
+					return;
+				}
+			}
+		}
+		this.copier = new Copier();
+		this.clone = MyResource.get(res).clone(copier);
+		this.resource = res;
+		this.container = new MyResourceContainer(res);
+		if (t == null || t.isInterrupted() || !t.isAlive()) {
+			startSearch();
+		}
 		} catch (Exception e) {
 			String str = Arrays.toString(e.getStackTrace());
 			System.out.println(str);
@@ -167,116 +182,137 @@ public class GlobalSearch {
 	private Thread t;
 
 	public void startSearch() {
-		aborted = false;
-		t = new Thread(()->{
-		Problem problem = new AbstractProblem(20,3) {			
-			
-			@Override
-			public void close() {
-				
-				super.close();
-			}
-			
-			@Override
-			public Solution newSolution() {
-				try {
-					Solution sol = new Solution(getNumberOfVariables(), getNumberOfObjectives());
-					sol.setAttribute("container", container);
-					for (int i = 0; i < getNumberOfVariables(); ++i) {
-						MOEAChangeVariable var = new MOEAChangeVariable(GlobalSearch.this);
-						sol.setVariable(i, var);
+		new Thread(()->{
+			abortSearch();
+			synchronized(GlobalSearch.this) {
+				while (t != null && t.isAlive()) {
+					try {
+						Thread.sleep(50);
+					} catch (InterruptedException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
 					}
-					return sol;
-				} catch (Exception e) {
-					e.printStackTrace();
-					return null;
 				}
-			}
-			
-			@Override
-			public void evaluate(Solution sol) {
-				if (t.isInterrupted()) {
-					return;
-				}
-				try {
-				EcoreTransferFunction tf = container.pullResource();
-				MyResource trg = MyResource.get(tf.forwardResource());
-				List<Change<?>> chs = new ArrayList<Change<?>>();
-				sol.setAttribute("container", container);
-				
-				for (int i = 0; i < getNumberOfVariables(); ++i)  {
-					Variable  var = sol.getVariable(i);
-					if (var == null) {
-						continue;
+				aborted = false;		
+				t = new Thread(()->{
+				Problem problem = new AbstractProblem(20,3) {			
+					
+					@Override
+					public void close() {
+						
+						super.close();
 					}
-					if (var instanceof MOEAChangeVariable) {
-						MOEAChangeVariable mvar = (MOEAChangeVariable)var;
-						if (mvar.getCurChange() != null) {
-							//mvar.getCurChange().checkChange();
-							if (!mvar.getCurChange().forResource().equals(tf.backResource())) {
-								URIBasedEcoreTransferFunction utf = new URIBasedEcoreTransferFunction(mvar.getCurChange().forResource(), tf.backResource());
-								mvar.getCurChange().transfer(utf);
-								mvar.getCurChange().checkChange();
-							} else {
-								mvar.getCurChange().checkChange();
+					
+					@Override
+					public Solution newSolution() {
+						try {
+							Solution sol = new Solution(getNumberOfVariables(), getNumberOfObjectives());
+							sol.setAttribute("container", container);
+							for (int i = 0; i < getNumberOfVariables(); ++i) {
+								MOEAChangeVariable var = new MOEAChangeVariable(GlobalSearch.this);
+								sol.setVariable(i, var);
 							}
-							
-							chs.add(mvar.getCurChange().transfered(tf));
+							return sol;
+						} catch (Exception e) {
+							e.printStackTrace();
+							return null;
 						}
-					} else {
-						throw new RuntimeException("I can only work with my variables!");
 					}
-				}
-				CompositeChangeImpl cci = new CompositeChangeImpl(trg.getResource(), chs);
-				ViolatedConstraintsEvaluator eval = new ViolatedConstraintsEvaluator();
-				double[] constraintsViolated = eval.evaluate(cci, new Evaluation());
-				if (!Double.isNaN(constraintsViolated[0])) {
-					sol.setObjective(0, -constraintsViolated[0]);
-				} else {
-					sol.setObjective(0, 99999999);
-				}
-				if (!Double.isNaN(constraintsViolated[1])) {
-					sol.setObjective(1, constraintsViolated[1]);
-				}  else {
-					sol.setObjective(1, 99999999);
-				}
-				if (!Double.isNaN(constraintsViolated[2])) {
-					sol.setObjective(2, -constraintsViolated[2]);
-				} else {
-					sol.setObjective(2, 99999999);
-				}
-				if (constraintsViolated[2] > 0.0 && (constraintsViolated[8] == 0.0 || !FILTER_GRAMMAR_ERROR) ) {
-					cci = cci.clone();
-					cci.checkChange();
-					cci.removeEmptyWhenExecuting();
-					cci.removeUnnecessarySubchanges();
-					cci.checkChange();
-					stream.add(cci, cci.transfered(tf.inverse()), constraintsViolated);
-				}
-				container.pushResource(tf);
-				} catch (Exception e) {
-					String str = Arrays.toString(e.getStackTrace()).replace(",","\n");
-					System.err.println(str);
-				}
+					
+					@Override
+					public void evaluate(Solution sol) {
+						if (aborted) {
+							throw new RuntimeException("I was interrupted!");
+						}
+						try {
+						EcoreTransferFunction tf = container.pullResource();
+						MyResource trg = MyResource.get(tf.forwardResource());
+						List<Change<?>> chs = new ArrayList<Change<?>>();
+						sol.setAttribute("container", container);
+						
+						for (int i = 0; i < getNumberOfVariables(); ++i)  {
+							Variable  var = sol.getVariable(i);
+							if (var == null) {
+								continue;
+							}
+							if (var instanceof MOEAChangeVariable) {
+								MOEAChangeVariable mvar = (MOEAChangeVariable)var;
+								if (mvar.getCurChange() != null) {
+									try {
+										//mvar.getCurChange().checkChange();
+										Resource changeFrom = mvar.getCurChange().forResource();
+										Resource changeTo = tf.backResource();
+										if (!Objects.equals(changeFrom,changeTo)) {
+											if (changeFrom != null && changeTo != null) {
+												URIBasedEcoreTransferFunction utf = new URIBasedEcoreTransferFunction(mvar.getCurChange().forResource(), tf.backResource());
+												mvar.getCurChange().transfer(utf);
+											}
+											mvar.getCurChange().checkChange();
+										} else {
+											mvar.getCurChange().checkChange();
+										}
+										
+										chs.add(mvar.getCurChange().transfered(tf));
+									} catch (Exception e) {
+										System.err.println("Error transfering ... "+e.getMessage());
+									}
+								}
+							} else {
+								throw new RuntimeException("I can only work with my variables!");
+							}
+						}
+						CompositeChangeImpl cci = new CompositeChangeImpl(trg.getResource(), chs);
+						ViolatedConstraintsEvaluator eval = new ViolatedConstraintsEvaluator();
+						double[] constraintsViolated = eval.evaluate(cci, new Evaluation());
+						if (!Double.isNaN(constraintsViolated[0])) {
+							sol.setObjective(0, -constraintsViolated[0]);
+						} else {
+							sol.setObjective(0, 99999999);
+						}
+						if (!Double.isNaN(constraintsViolated[1])) {
+							sol.setObjective(1, constraintsViolated[1]);
+						}  else {
+							sol.setObjective(1, 99999999);
+						}
+						if (!Double.isNaN(constraintsViolated[2])) {
+							sol.setObjective(2, -constraintsViolated[2]);
+						} else {
+							sol.setObjective(2, 99999999);
+						}
+						if (constraintsViolated[2] > 0.0 && (constraintsViolated[8] == 0.0 || !FILTER_GRAMMAR_ERROR) ) {
+							cci = cci.clone();
+							cci.checkChange();
+							cci.removeEmptyWhenExecuting();
+							cci.removeUnnecessarySubchanges();
+							cci.checkChange();
+							stream.add(cci, cci.transfered(tf.inverse()), constraintsViolated);
+						}
+						container.pushResource(tf);
+						} catch (Exception e) {
+							String str = Arrays.toString(e.getStackTrace()).replace(",","\n");
+							System.err.println(str);
+						}
+					}
+				};
+				//problem = new DistributedProblem(problem, Executors.newCachedThreadPool());
+				
+				exec = new Executor().
+						withAlgorithm("NSGAII").withProblem(problem).withMaxTime(1000*1000*1000L).withProperty("populationSize", 100);
+				exec.run();
+				});
+				t.setPriority(2);
+				t.setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
+					
+					@Override
+					public void uncaughtException(Thread t, Throwable e) {
+						System.out.println(e.getMessage());
+						String s = Arrays.toString(e.getStackTrace()).replace(",", "\n");
+						System.out.println(s);
+					}
+				});
+				t.start();
 			}
-		};
-		//problem = new DistributedProblem(problem, Executors.newCachedThreadPool());
-		
-		exec = new Executor().
-				withAlgorithm("NSGAII").withProblem(problem).withMaxTime(1000*1000*1000L).withProperty("populationSize", 100);
-		exec.run();
-		});
-		t.setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
-			
-			@Override
-			public void uncaughtException(Thread t, Throwable e) {
-				System.out.println(e.getMessage());
-				String s = Arrays.toString(e.getStackTrace()).replace(",", "\n");
-				System.out.println(s);
-			}
-		});
-		t.start();
-		
+		}).start();
 	}
 	
 	private boolean aborted;
@@ -291,7 +327,6 @@ public class GlobalSearch {
 				t.interrupt();
 			}
 		} catch (Exception e) {
-			
 		}
 	}
 	

@@ -2,6 +2,7 @@ package at.ac.tuwien.big.autoedit.transfer;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
+import java.lang.ref.SoftReference;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Method;
 import java.util.Map;
@@ -24,8 +25,8 @@ public class EcoreMapTransferFunction extends MapTransferFunction<EObject> imple
 	
 	public EcoreMapTransferFunction(Resource start, Resource target, Map<EObject,EObject> map) {
 		super(map);
-		this.start = new WeakReference<Resource>(start);
-		this.target = new WeakReference<Resource>(target);
+		this.start = new WeakReference<>(start);
+		this.target = new WeakReference<>(target);
 	}
 
 	@Override

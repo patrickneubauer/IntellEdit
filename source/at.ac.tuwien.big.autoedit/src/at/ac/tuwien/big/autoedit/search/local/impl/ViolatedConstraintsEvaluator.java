@@ -22,8 +22,6 @@ import org.eclipse.ocl.ecore.EcoreEnvironmentFactory;
 import org.eclipse.ocl.ecore.OCL;
 import org.eclipse.ocl.ecore.OCLExpression;
 
-import com.ibm.icu.util.EthiopicCalendar;
-
 import at.ac.tuwien.big.autoedit.change.Change;
 import at.ac.tuwien.big.autoedit.change.Undoer;
 import at.ac.tuwien.big.autoedit.ecore.util.MyEcoreUtil;
@@ -76,7 +74,7 @@ public class ViolatedConstraintsEvaluator implements ResourceEvaluator<Evaluatio
 			if (curEvaluation == null) {			
 				curEvaluation = ref.eval = new HashMap<Object, Map<Evaluable<?,?>,Double>>();
 				idOccurrences = ref.ids = new HashMap<EAttribute, Map<Object,Set<Object>>>();
-			
+			MyResource res_;
 				
 			
 				for (EObject obj: myres.iterateAllContents()) {
@@ -120,7 +118,8 @@ public class ViolatedConstraintsEvaluator implements ResourceEvaluator<Evaluatio
 		}
 		Map<Object, Map<Evaluable<?,?>, Double>> remaining = new HashMap<>(curEvaluation);
 		Map<EAttribute,Map<Object,Set<Object>>> newidOccurrences = ref.ids;
-		EcoreTransferFunction clonedFunc = ch.forMyResource().cloneFunc();
+		Resource[] resObj = new Resource[1];
+		EcoreTransferFunction clonedFunc = ch.forMyResource().cloneFunc(resObj);
 		Undoer undoer = ch.execute();
 		double costs = ch.getCosts();
 		double ret = 0.0;

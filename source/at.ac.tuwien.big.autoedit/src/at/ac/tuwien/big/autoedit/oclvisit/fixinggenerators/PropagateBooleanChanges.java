@@ -15,6 +15,7 @@ import at.ac.tuwien.big.autoedit.fixer.MakeDifferent;
 import at.ac.tuwien.big.autoedit.fixer.MakeEqual;
 import at.ac.tuwien.big.autoedit.fixer.MakeFalse;
 import at.ac.tuwien.big.autoedit.fixer.MakeTrue;
+import at.ac.tuwien.big.autoedit.fixer.impl.MakeEqualImpl;
 import at.ac.tuwien.big.autoedit.fixer.impl.MakeFalseImpl;
 import at.ac.tuwien.big.autoedit.fixer.impl.MakeTrueImpl;
 import at.ac.tuwien.big.autoedit.oclvisit.AbstractSelectiveEvaluator;
@@ -166,16 +167,16 @@ public class PropagateBooleanChanges  extends AbstractSelectiveEvaluator<Operati
 					}
 					{
 						boolean success = false;
-						for (int i = 0; i < 2; ++i) {
-							for (int j = 0; j < 2; ++j) {
+						for (int i = 0; i <= 2; ++i) {
+							for (int j = 0; j <= 2; ++j) {
 								if (states[i][j] == targetState) {
 									if (first.ordinal() != i) {
 										fixAttempts[0].add(i==OCLBooleanState.FALSE.ordinal()?
-												MakeFalseImpl.INSTANCE:MakeTrueImpl.INSTANCE);
+												MakeFalseImpl.INSTANCE:(i == OCLBooleanState.NULL.ordinal()?new MakeEqualImpl(null):MakeTrueImpl.INSTANCE));
 									}
 									if (second.ordinal() != j) {
 										fixAttempts[1].add(j==OCLBooleanState.FALSE.ordinal()?
-												MakeFalseImpl.INSTANCE:MakeTrueImpl.INSTANCE);
+												MakeFalseImpl.INSTANCE:(j == OCLBooleanState.NULL.ordinal()?new MakeEqualImpl(null):MakeTrueImpl.INSTANCE));
 									}
 									success = true;
 								}
@@ -205,7 +206,7 @@ public class PropagateBooleanChanges  extends AbstractSelectiveEvaluator<Operati
 	
 
 	public static void main(String[] args) {
-		FixAttempt.printFixAttempt(getStateFixAttempts("=", OCLBooleanState.TRUE, OCLBooleanState.FALSE, OCLBooleanState.TRUE));
+		FixAttempt.printFixAttempt(getStateFixAttempts("and", OCLBooleanState.TRUE, OCLBooleanState.FALSE, OCLBooleanState.TRUE));
 	}
 	
 

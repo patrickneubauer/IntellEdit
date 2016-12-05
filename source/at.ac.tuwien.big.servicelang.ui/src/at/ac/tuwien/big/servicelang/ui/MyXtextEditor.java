@@ -8,6 +8,8 @@ import java.util.Map;
 import java.util.WeakHashMap;
 import java.util.Map.Entry;
 
+import javax.swing.plaf.basic.BasicScrollPaneUI.HSBChangeListener;
+
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.FileLocator;
@@ -24,6 +26,7 @@ import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.ui.texteditor.DefaultMarkerAnnotationAccess;
 import org.eclipse.ui.texteditor.MarkerAnnotation;
+import org.eclipse.ui.texteditor.MarkerUtilities;
 import org.eclipse.xtext.ui.editor.XtextEditor;
 import org.eclipse.xtext.ui.editor.validation.XtextAnnotation;
 import org.osgi.framework.Bundle;
@@ -39,6 +42,8 @@ public class MyXtextEditor extends XtextEditor {
 	{
 		System.out.println("Hello everyone!");
 	}
+	
+	private static WeakHashMap<IMarker, Boolean> knownMarkers = new WeakHashMap<IMarker, Boolean>();
 	
 	@Override
 	protected IAnnotationAccess createAnnotationAccess() {
@@ -157,7 +162,35 @@ public class MyXtextEditor extends XtextEditor {
 						annot.markDeleted(true);
 					}
 				}
-					
+				if (annot.isMarkedDeleted()) {
+					return -1;
+				}
+				if (annot instanceof MarkerAnnotation) {
+					MarkerAnnotation ma = (MarkerAnnotation)annot;
+					IMarker marker = ma.getMarker();
+					Boolean lastGen = knownMarkers.get(marker);
+					if (lastGen != null && lastGen != isGenetic) {
+						System.err.println("Marker switched!");
+					}
+					if (lastGen == null) {
+						knownMarkers.put(marker, isGenetic);
+						try {
+							System.out.println("Marker for "+isGenetic+": "+marker);
+							marker.setAttribute("textPreferenceKey", "MarkerHighlight"+isGenetic);
+							if (isGenetic) {
+								marker.setAttribute("textPreferenceValue", false);
+							} else {
+								marker.setAttribute("textPreferenceValue", true);
+							}
+							marker.setAttribute("textStylePreferenceKey","highlight.text.style");
+							if (isGenetic) {
+								marker.setAttribute("textStylePreferenceValue","UNDERLINE");
+							}
+						} catch (Exception e) {
+							System.err.println(e.getMessage());
+						}
+					}
+				}
 		 		int num = isGenetic?(hasProposals?2:3):(hasProposals?1:0);
 		 		return num;
 			}
@@ -186,7 +219,7 @@ public class MyXtextEditor extends XtextEditor {
 					} else if (num == 0) {
 						return 1;
 					} else if (num == 3) {
-						return 0;
+						return 2;
 					}
 				}
 				return super.getLayer(annotation);

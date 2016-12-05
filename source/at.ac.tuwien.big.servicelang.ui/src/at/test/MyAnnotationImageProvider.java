@@ -15,7 +15,7 @@ public class MyAnnotationImageProvider extends XtextMarkerAnnotationImageProvide
 	@Override
 	public Image getManagedImage(Annotation annotation) {
 		AnnotationPreference pref;
-		return img;
+		return img==null?super.getManagedImage(annotation):img;
 	}
 	
 	private Image img;

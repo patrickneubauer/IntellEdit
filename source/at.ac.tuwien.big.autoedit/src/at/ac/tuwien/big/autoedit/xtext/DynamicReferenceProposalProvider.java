@@ -8,6 +8,7 @@ import java.util.Map;
 
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EReference;
+import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.util.EcoreUtil;
 import org.eclipse.jface.text.contentassist.ICompletionProposal;
 import org.eclipse.xtext.resource.IEObjectDescription;
@@ -39,10 +40,10 @@ public class DynamicReferenceProposalProvider extends AbstractJavaBasedContentPr
 		Iterable<IEObjectDescription> candidates = queryScope(scope, model, reference, filter);
 		EcoreUtil.Copier copier = new EcoreUtil.Copier();
 		MyResource originalRes = MyResource.get(model.eResource());
-		MyResource clonedRes = originalRes.clone(copier);
+		Resource clonedRes = originalRes.clone(copier);
 		EObject context = copier.get(model);
 		EcoreTransferFunction transferFunc = new EcoreMapTransferFunction(originalRes.getResource(),
-				clonedRes.getResource(), copier);
+				clonedRes, copier);
 		ViolatedConstraintsEvaluator eval = new ViolatedConstraintsEvaluator();
 		Map<IEObjectDescription, double[]> quality = new HashMap<IEObjectDescription, double[]>();
 		Evaluation wr = new Evaluation();
@@ -51,7 +52,7 @@ public class DynamicReferenceProposalProvider extends AbstractJavaBasedContentPr
 				continue;
 			}
 			EObject eobj = candidate.getEObjectOrProxy();
-			quality.put(candidate,eval.evaluate(new BasicAddConstantChange(clonedRes.getResource(),
+			quality.put(candidate,eval.evaluate(new BasicAddConstantChange(clonedRes,
 					context, reference, copier.get(eobj)), wr));
 		}
 		List<IEObjectDescription> allObjs = new ArrayList<IEObjectDescription>(quality.keySet());

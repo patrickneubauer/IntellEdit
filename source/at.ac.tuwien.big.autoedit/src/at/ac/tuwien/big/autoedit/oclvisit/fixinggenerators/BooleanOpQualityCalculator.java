@@ -41,10 +41,10 @@ public class BooleanOpQualityCalculator extends AbstractSelectiveEvaluator<Opera
 	public static Map<String,BooleanOpCalculator> wantFalseMap = new HashMap<>();
 	
 	static {
-		addCalculator("and", (at,af,bt,bf)->Math.min(at.get(), bt.get()),
-				(at,af,bt,bf)->Math.max(af.get(), bf.get()));
-		addCalculator("or", (at,af,bt,bf)->Math.max(at.get(), bt.get()),
-				(at,af,bt,bf)->Math.min(af.get(), bf.get()));
+		addCalculator("and", (at,af,bt,bf)->Math.min(at.get(), bt.get())*0.9999+0.0001*Math.max(at.get(), bt.get()),
+				(at,af,bt,bf)->Math.max(af.get(), bf.get())*0.9999+0.0001*Math.min(at.get(), bt.get()));
+		addCalculator("or", (at,af,bt,bf)->Math.max(at.get(), bt.get())*0.9999+0.0001*Math.min(at.get(), bt.get()),
+				(at,af,bt,bf)->Math.min(af.get(), bf.get())*0.9999+0.0001*Math.max(at.get(), bt.get()));
 		addCalculator("xor", (at,af,bt,bf)->Math.min(
 				Math.abs(at.get()-bt.get()),
 				Math.abs(af.get()-bf.get())),

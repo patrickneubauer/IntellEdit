@@ -52,10 +52,10 @@ public  class ExpressionQuickfixInfo<T extends Comparable<T>> {
 			}
 			
 			String str = "";
-			if (prop.getQuality() instanceof Number) {
+			/*if (prop.getQuality() instanceof Number) {
 				str = Change.costToInvisible(((Number)prop.getQuality()).doubleValue(), false);
 			}
-			String invisibleString = Change.costToInvisible(prop.getCurQuality(), false)+str+Change.costToInvisible(prop.getCosts(),true);
+			String invisibleString = Change.costToInvisible(prop.getCurQuality(), false)+str+Change.costToInvisible(prop.getCosts(),true);*/
 			String imageStr = prop.getSource()==Source.LOCAL?QuickfixReferenceImpl.LOCAL_IMAGE:QuickfixReferenceImpl.GENETIC_IMAGE;
 			ret.add(new QuickfixReferenceImpl(change.getName(contextUri),
 				change.toString(contextUri)+", Local-Score: " + prop.getCurQuality()+", Score: " + prop.getQuality()+", Cost "+prop.getCosts(), change,

@@ -86,6 +86,7 @@ public abstract class AbstractFeatureChangeType<CT extends AbstractFeatureChange
 				otherParameters);
 	}
 	
+	
 	public static<CT extends AbstractFeatureChangeType<CT,?>> ParameterType<CT, Integer> getIndexer(int plus) {
 		EvalFunc<CT, List<Integer>> evalFunc = new EvalFunc<CT, List<Integer>>() {
 

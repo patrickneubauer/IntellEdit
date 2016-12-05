@@ -1,5 +1,6 @@
 package at.ac.tuwien.big.autoedit.ecore.util;
 
+import java.lang.ref.SoftReference;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -76,10 +77,10 @@ import at.tuwien.big.virtmod.datatype.IteratorUtils;
 
 public class MyResource {
 	
-	private WeakReference<Resource> res;
+	private SoftReference<Resource> res;
 	
 	public MyResource(Resource from) {
-		this.res = new WeakReference<Resource>(from);
+		this.res = new SoftReference<Resource>(from);
 		if (from == null) {
 			System.out.println("Null resource!");
 		}
@@ -790,13 +791,13 @@ public class MyResource {
 		return new StaticScopeParameterType(targetClass, scope);
 	}
 
-	public MyResource clone() {
+	public Resource clone() {
 		return clone(new EcoreUtil.Copier());
 	}
 	
-	public MyResource clone(Copier copier) {
+	public Resource clone(Copier copier) {
 		if (res.get() == null) {
-			return this;
+			return this.getResource();
 		}
 		Resource newResource = new ResourceImpl();
 		newResource.setURI(getResource().getURI());
@@ -807,7 +808,7 @@ public class MyResource {
 		copier.copyReferences();
 		MyResource ret = MyResource.get(newResource);
 		ret.setCostProvider(getCostProvider());
-		return ret;
+		return ret.getResource();
 	}
 
 	public String getExpressionId(OCLExpression expr) {
@@ -977,6 +978,27 @@ public class MyResource {
 		return true;
 	}
 
+
+
+	public boolean equalsRes(MyResource myResource) {
+		List<EObject> first = new ArrayList<EObject>();
+		List<EObject> second = new ArrayList<EObject>();
+		for (EObject eobj: iterateAllContents()) {
+			first.add(eobj);
+		}
+		for (EObject eobj: myResource.iterateAllContents()) {
+			second.add(eobj);
+		}
+		if (first.size() != second.size()) {
+			return false;
+		}
+		Map<EObject,EObject> eobjMap = new HashMap<EObject, EObject>();
+		for (int i = 0; i < first.size(); ++i) {
+			eobjMap.put(first.get(i),second.get(i));
+		}
+		return equals(myResource, new EcoreMapTransferFunction(getResource(), myResource.getResource(), eobjMap));
+	}
+	
 	public boolean equals(MyResource cloned, EcoreTransferFunction etf) {
 		if (getResource().getContents().size() != cloned.getResource().getContents().size()) {
 			return false;
@@ -1003,10 +1025,11 @@ public class MyResource {
 		return true;
 	}
 
-	public EcoreTransferFunction cloneFunc() {
+	public EcoreTransferFunction cloneFunc(Resource[] resourceRef) {
 		EcoreUtil.Copier copier = new EcoreUtil.Copier();
-		MyResource cloned = clone(copier);
-		return new EcoreMapTransferFunction(getResource(),cloned.getResource(),copier);
+		Resource cloned = clone(copier);
+		resourceRef[0] = cloned;
+		return new EcoreMapTransferFunction(getResource(),cloned,copier);
 	}
 
 	public boolean equalsTarget(EcoreTransferFunction cf) {
