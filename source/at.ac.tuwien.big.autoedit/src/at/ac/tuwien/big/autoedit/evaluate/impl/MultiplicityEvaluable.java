@@ -46,5 +46,20 @@ public class MultiplicityEvaluable implements Evaluable<MultiplicityEvaluable, M
 		}
 		return ret.toString();
 	}
+	
+	public String getBoundStr() {
+		int lb = feat.getLowerBound();
+		int up = feat.getUpperBound();
+		if (lb == up) {
+			return String.valueOf(lb);
+		} else {
+			if (up == -1) {
+				return lb+"..*";
+			} else {
+				return lb+".."+up;
+			}
+		}
+	}
+
 
 }

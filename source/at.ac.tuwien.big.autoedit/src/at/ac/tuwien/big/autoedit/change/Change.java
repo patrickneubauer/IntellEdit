@@ -1,54 +1,30 @@
 package at.ac.tuwien.big.autoedit.change;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringReader;
 import java.io.StringWriter;
-import java.util.AbstractList;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.WeakHashMap;
 
 import org.eclipse.emf.common.util.TreeIterator;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.resource.Resource;
-import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.xtext.nodemodel.INode;
 import org.eclipse.xtext.nodemodel.util.NodeModelUtils;
 import org.eclipse.xtext.parser.IParseResult;
 import org.eclipse.xtext.parser.IParser;
-import org.eclipse.xtext.resource.XtextResource;
-import org.eclipse.xtext.ui.editor.XtextEditor;
-import org.eclipse.xtext.ui.editor.model.IXtextDocument;
-import org.eclipse.xtext.ui.editor.model.XtextDocument;
-import org.eclipse.xtext.util.DiffUtil;
 
-import at.ac.tuwien.big.autoedit.change.basic.CreateObjectChange;
-import at.ac.tuwien.big.autoedit.change.basic.DeleteObjectChange;
 import at.ac.tuwien.big.autoedit.ecore.util.MyResource;
-import at.ac.tuwien.big.autoedit.fixer.SetAdd;
 import at.ac.tuwien.big.autoedit.oclvisit.FixAttemptReference;
 import at.ac.tuwien.big.autoedit.transfer.EcoreTransferFunction;
-import at.ac.tuwien.big.autoedit.transfer.TransferFunction;
-import at.tuwien.big.virtmod.datatype.IteratorUtils;
-import at.tuwien.big.virtmod.datatype.IteratorUtils.SimpleFunction;
-import difflib.Chunk;
-import difflib.Delta;
-import difflib.Delta.TYPE;
-import difflib.DiffAlgorithm;
-import difflib.DiffUtils;
-import difflib.Patch;
-import difflib.myers.MyersDiff;
+import at.ac.tuwien.big.xtext.util.IteratorUtils;
 
 
 /**A concrete change which can be executed*/

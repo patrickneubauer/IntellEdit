@@ -254,6 +254,7 @@ public class GlobalSearch {
 										
 										chs.add(mvar.getCurChange().transfered(tf));
 									} catch (Exception e) {
+										e.printStackTrace();
 										System.err.println("Error transfering ... "+e.getMessage());
 									}
 								}
@@ -298,7 +299,8 @@ public class GlobalSearch {
 				
 				exec = new Executor().
 						withAlgorithm("NSGAII").withProblem(problem).withMaxTime(1000*1000*1000L).withProperty("populationSize", 100);
-				exec.run();
+				//TODO: Nur jetzt, weil es alles so unübersichtlich macht
+				//exec.run();
 				});
 				t.setPriority(2);
 				t.setUncaughtExceptionHandler(new UncaughtExceptionHandler() {

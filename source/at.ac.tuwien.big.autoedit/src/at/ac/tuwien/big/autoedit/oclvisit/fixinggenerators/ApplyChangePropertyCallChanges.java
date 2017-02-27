@@ -26,6 +26,8 @@ import at.ac.tuwien.big.autoedit.change.basic.FixedClearChangeType;
 import at.ac.tuwien.big.autoedit.change.basic.FixedDeleteConstantChangeType;
 import at.ac.tuwien.big.autoedit.change.basic.FixedSetConstantChangeType;
 import at.ac.tuwien.big.autoedit.change.parameter.ConditionalScopeParameterType;
+import at.ac.tuwien.big.autoedit.change.parameter.StaticScopeParameterType;
+import at.ac.tuwien.big.autoedit.change.primitive.StringChangeScope;
 import at.ac.tuwien.big.autoedit.ecore.util.MyResource;
 import at.ac.tuwien.big.autoedit.fixer.ChangeSomething;
 import at.ac.tuwien.big.autoedit.fixer.Decrease;
@@ -39,12 +41,14 @@ import at.ac.tuwien.big.autoedit.fixer.SetAddAny;
 import at.ac.tuwien.big.autoedit.fixer.SetRemove;
 import at.ac.tuwien.big.autoedit.fixer.SetRemoveAny;
 import at.ac.tuwien.big.autoedit.fixer.impl.ChangeSomethingImpl;
+import at.ac.tuwien.big.autoedit.fixer.impl.IncreaseImpl;
 import at.ac.tuwien.big.autoedit.oclvisit.AbstractSelectiveEvaluator;
 import at.ac.tuwien.big.autoedit.oclvisit.EvalResult;
 import at.ac.tuwien.big.autoedit.oclvisit.ExpressionResult;
 import at.ac.tuwien.big.autoedit.oclvisit.FixActionMap;
 import at.ac.tuwien.big.autoedit.oclvisit.FixingActionGenerator;
 import at.ac.tuwien.big.autoedit.oclvisit.FixingGenerator;
+import at.ac.tuwien.big.autoedit.scope.ValueScope;
 
 public class ApplyChangePropertyCallChanges  extends AbstractSelectiveEvaluator<PropertyCallExp, Object> implements FixingActionGenerator<PropertyCallExp, Object> {
 
@@ -72,20 +76,25 @@ public class ApplyChangePropertyCallChanges  extends AbstractSelectiveEvaluator<
 		}
 		boolean shouldAdd = false;
 		boolean shouldRemove = false;
+		boolean shouldChange = false;
 		Object addSpecific = null;
 		Object removeSpecific = null;
 		if (singleAttemptForThis instanceof ChangeSomethingImpl) {
 			shouldAdd = shouldRemove = true;
+			shouldChange = true;
 		} else if (singleAttemptForThis instanceof SetAdd) {
 			shouldAdd = true;
 			addSpecific = ((SetAdd) singleAttemptForThis).border();
-		} else if (singleAttemptForThis instanceof SetAddAny) {
+		} else if (singleAttemptForThis instanceof SetAddAny ) {
 			shouldAdd = true;
 		} else if (singleAttemptForThis instanceof SetRemove) {
 			shouldRemove = true;
 			removeSpecific = ((SetRemove) singleAttemptForThis).border();
 		} else if (singleAttemptForThis instanceof SetRemoveAny) {
 			shouldRemove = true;
+		} else if (singleAttemptForThis instanceof Increase || singleAttemptForThis instanceof Decrease){
+			//TODO: More specific ...
+			shouldChange = true;
 		} else {
 			return false;
 		}
@@ -168,14 +177,42 @@ public class ApplyChangePropertyCallChanges  extends AbstractSelectiveEvaluator<
 				
 			} else {
 				if (shouldRemove) {
+					if (targetFeat.getEType().getInstanceClass() == String.class) {
+						//Reduce length
+						Object curValue = obj.eGet(targetFeat);
+						if (curValue != null && targetType instanceof EDataType) {
+							ParameterType changeType = new StaticScopeParameterType<>(String.class, StringChangeScope.getScope((String)curValue, false, false, true));
+							String onlyThatLength = String.valueOf(curValue);
+							if (changeType != null) {
+							potentialFixChanges.addFixingAction(priority, 
+									new FixedSetConstantChangeType<>(resource.getResource(),obj,targetFeat,
+								changeType));
+							}
+						}
+						 
+					}
+						
 					potentialFixChanges.addFixingAction(priority, new FixedClearChangeType<>(resource.getResource(),obj, targetFeat));
 				}
 				if (shouldAdd) {
+					if (targetFeat.getEType().getInstanceClass() == String.class) {
+						//Reduce length
+						Object curValue = obj.eGet(targetFeat);
+						if (curValue != null && targetType instanceof EDataType) {
+							ParameterType changeType = new StaticScopeParameterType<>(String.class, StringChangeScope.getScope((String)curValue, true, false, false));
+							if (changeType != null) {
+							potentialFixChanges.addFixingAction(priority, 
+									new FixedSetConstantChangeType<>(resource.getResource(),obj,targetFeat,
+								changeType));
+							}
+						}
+						 
+					}
 					potentialFixChanges.addFixingAction(priority, 
 							new FixedSetConstantChangeType<>(resource.getResource(),obj,targetFeat,
 							valueGeneratingParameter));
 				}
-				if (shouldRemove && shouldAdd) {
+				if (shouldChange || (shouldRemove && shouldAdd)) {
 					Object curValue = obj.eGet(targetFeat);
 					if (curValue != null && targetType instanceof EDataType) {
 						ParameterType changeType = resource.getChangeValueGenerator(targetFeat, targetClass, curValue);

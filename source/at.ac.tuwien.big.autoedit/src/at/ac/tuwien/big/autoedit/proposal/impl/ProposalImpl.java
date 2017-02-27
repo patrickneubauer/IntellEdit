@@ -1,5 +1,8 @@
 package at.ac.tuwien.big.autoedit.proposal.impl;
 
+import java.util.List;
+
+import at.ac.tuwien.big.autoedit.change.BasicChange;
 import at.ac.tuwien.big.autoedit.change.Change;
 import at.ac.tuwien.big.autoedit.proposal.Proposal;
 
@@ -63,6 +66,16 @@ public class ProposalImpl<T extends Comparable<T>> implements Proposal<T,Proposa
 	
 	public String toString() {
 		return "Proposal curQ: " + curQuality+", q: "+quality+", costs: "+costs+":\n"+change;
+	}
+
+	private List<BasicChange<?>> reducedBasic;
+	
+	@Override
+	public List<BasicChange<?>> getBasicChanges() {
+		if (reducedBasic == null) {
+			reducedBasic = change.getReducedBasicChanges();
+		}
+		return reducedBasic;
 	}
 
 

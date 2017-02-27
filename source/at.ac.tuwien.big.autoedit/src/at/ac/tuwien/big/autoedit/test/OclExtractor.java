@@ -26,6 +26,8 @@ import org.eclipse.emf.ecore.EOperation;
 import org.eclipse.emf.ecore.EPackage;
 import org.eclipse.emf.ecore.EReference;
 import org.eclipse.emf.ecore.EStructuralFeature;
+import org.eclipse.emf.ecore.EcoreFactory;
+import org.eclipse.emf.ecore.EcorePackage;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.resource.ResourceSet;
 import org.eclipse.emf.ecore.resource.URIConverter;
@@ -40,10 +42,13 @@ import org.eclipse.emf.mwe.utils.StandaloneSetup;
 import org.eclipse.ocl.ParserException;
 import org.eclipse.ocl.ecore.OCL;
 import org.eclipse.ocl.ecore.OCLExpression;
+import org.eclipse.ocl.ecore.TupleLiteralExp;
+import org.eclipse.ocl.ecore.TupleLiteralPart;
 import org.eclipse.ocl.ecore.OCL.Helper;
 import org.eclipse.ocl.ecore.delegate.OCLDelegateDomain;
 import org.eclipse.ocl.ecore.delegate.OCLInvocationDelegateFactory;
 import org.eclipse.ocl.ecore.delegate.OCLSettingDelegateFactory;
+import org.eclipse.ocl.expressions.PropertyCallExp;
 
 
 public class OclExtractor {
@@ -79,6 +84,51 @@ public class OclExtractor {
 		}
 		return expr;
 	}
+	
+	public static OCLExpression[] getSubThings(OCLExpression base) {
+		if (base instanceof org.eclipse.ocl.ecore.PropertyCallExp) {
+			org.eclipse.ocl.ecore.PropertyCallExp pe = (org.eclipse.ocl.ecore.PropertyCallExp)base;
+			if (!"status".equals(pe.getReferredProperty().getName())) {
+				return new OCLExpression[]{base,null,null};
+			}
+			if (pe.getSource() instanceof TupleLiteralExp) {
+				TupleLiteralExp tle = (TupleLiteralExp)pe.getSource();
+				OCLExpression[] ret = new OCLExpression[3];
+				for (org.eclipse.ocl.expressions.TupleLiteralPart<EClassifier, EStructuralFeature> part: tle.getPart()) {
+					if ("status".equals(part.getAttribute().getName())) {
+						ret[0] = (OCLExpression) part.getValue();
+					} else if ("message".equals(part.getAttribute().getName())) {
+						ret[1] = (OCLExpression) part.getValue();
+					} else if ("??".equals(part.getAttribute().getName())) { //TODO: Implement me: severity ...
+						ret[2] = (OCLExpression) part.getValue();
+					}
+				}
+				return ret;
+			}
+		}
+		return new OCLExpression[]{base,null,null};
+	}
+
+	
+	public static Map<String,OCLExpression[]> convertToExpressionMsg(Helper oclHelper, EClass context, Map<String,String> map) {
+		Map<String, OCLExpression[]> expr = new HashMap<>();
+		for (Entry<String,String> subEntr: map.entrySet()) {
+			oclHelper.setContext(context);
+			try {
+				OCLExpression[] ret = new OCLExpression[2];
+				OCLExpression oclexpr = oclHelper.createQuery(subEntr.getValue());
+				ret = getSubThings(oclexpr);
+				expr.put(subEntr.getKey(), ret);
+			} catch (ParserException ex) {
+				String str = Arrays.toString(ex.getStackTrace()).replace(",", "\n");
+				System.out.println(str);
+				throw new RuntimeException(ex);
+			}
+			
+		}
+		return expr;
+	}
+	
 
 	public static Map<EClass, Map<String, OCLExpression>> getAllOCLExpressions(Map<EClass, Map<String,String>> map) {
 		Map<EClass, Map<String,OCLExpression>> ret = new HashMap<EClass, Map<String,OCLExpression>>();
@@ -176,7 +226,10 @@ public class OclExtractor {
 		Resource ecoreResource = resourceSet.getResource(resourceSet.getURIConverter().normalize(URI.createFileURI(ecoreFile.getAbsolutePath())), true);
 		for (EObject eobj: (Iterable<EObject>)()->ecoreResource.getAllContents()) {
 			if (eobj instanceof EPackage) {
-				resourceSet.getPackageRegistry().put(((EPackage) eobj).getNsURI(), eobj);
+				String uri = ((EPackage) eobj).getNsURI();
+				System.out.println("Register package "+uri+" ==> "+eobj);
+				resourceSet.getPackageRegistry().put(uri, eobj);
+				EPackage.Registry.INSTANCE.put(uri, eobj);
 			}
 		}
 		return ecoreResource;
@@ -234,6 +287,8 @@ public class OclExtractor {
 		}
 		return constraintMap;
 	}
+	
+
 
 	private static Map<EClass, Map<String, String>> getAllClassOCLExpressions(TreeIterator<EObject> iter, EPackage ePackage) {
 		Map<EClass, Map<String, String>> ret = new HashMap<>();

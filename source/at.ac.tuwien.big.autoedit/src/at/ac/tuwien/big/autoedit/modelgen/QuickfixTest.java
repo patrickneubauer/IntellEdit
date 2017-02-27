@@ -52,7 +52,7 @@ public class QuickfixTest {
 			ViolatedConstraintsEvaluator eval = new ViolatedConstraintsEvaluator();
 			double[] vc = eval.evaluate(Change.empty(generated), new Evaluation());
 			QuickfixTestRunner runner = new QuickfixTestRunner(generated);
-			runner.doRun(1000, 10000);
+			runner.doRun(500, 500000);
 			double[] vc2 = eval.evaluate(Change.empty(generated), new Evaluation());
 			
 			try {

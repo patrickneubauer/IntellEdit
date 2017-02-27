@@ -9,7 +9,6 @@ import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EStructuralFeature;
 import org.eclipse.ocl.expressions.PropertyCallExp;
 
-import at.ac.tuwien.big.autoedit.ecore.util.MyEcoreUtil;
 import at.ac.tuwien.big.autoedit.ecore.util.MyResource;
 import at.ac.tuwien.big.autoedit.evaluate.impl.EvaluableReferenceImpl;
 import at.ac.tuwien.big.autoedit.evaluate.impl.OCLExpressionEvaluable;
@@ -24,6 +23,7 @@ import at.ac.tuwien.big.autoedit.oclvisit.FixAttemptReferenceInfo;
 import at.ac.tuwien.big.autoedit.oclvisit.FixingActionGenerator;
 import at.ac.tuwien.big.autoedit.oclvisit.OCLReferenceImpl;
 import at.ac.tuwien.big.autoedit.oclvisit.RejectingFilterManager;
+import at.ac.tuwien.big.xtext.util.MyEcoreUtil;
 
 public class PropertyCallAttemptReferenceAdder  extends AbstractSelectiveEvaluator<PropertyCallExp, Object> implements FixAttemptReferenceAdder<PropertyCallExp, Object> {
 
@@ -58,7 +58,7 @@ public class PropertyCallAttemptReferenceAdder  extends AbstractSelectiveEvaluat
 				for (Object o: target) {
 					if (Objects.equals(toRemove, o)) {
 						info.addFixAttemptReference(new FixAttemptFeatureReferenceImpl(eobj, esf, i, o), 
-								new EvaluableReferenceImpl(new OCLExpressionEvaluable(expr)), singleAttemptForThis);
+								new EvaluableReferenceImpl(new OCLExpressionEvaluable(expr,null)), singleAttemptForThis);
 					}
 					++i;
 				}
@@ -71,7 +71,7 @@ public class PropertyCallAttemptReferenceAdder  extends AbstractSelectiveEvaluat
 					continue;
 				}
 				EObject eobj = (EObject)obj;
-				info.addFixAttemptReference(new FixAttemptFeatureReferenceImpl(eobj, esf), new EvaluableReferenceImpl(new OCLExpressionEvaluable(expr)),
+				info.addFixAttemptReference(new FixAttemptFeatureReferenceImpl(eobj, esf), new EvaluableReferenceImpl(new OCLExpressionEvaluable(expr,null)),
 						singleAttemptForThis);
 			}
 		}

@@ -13,8 +13,8 @@ import org.eclipse.emf.ecore.resource.Resource;
 import at.ac.tuwien.big.autoedit.change.BasicChange;
 import at.ac.tuwien.big.autoedit.change.Change;
 import at.ac.tuwien.big.autoedit.change.Undoer;
-import at.ac.tuwien.big.autoedit.ecore.util.MyEcoreUtil;
 import at.ac.tuwien.big.autoedit.transfer.EcoreTransferFunction;
+import at.ac.tuwien.big.xtext.util.MyEcoreUtil;
 
 public abstract class AbstractFeatureChange<FC extends AbstractFeatureChange<FC>> implements FeatureChange<FC> {
 	
@@ -34,7 +34,10 @@ public abstract class AbstractFeatureChange<FC extends AbstractFeatureChange<FC>
 		this.res = res2;
 				
 	}
-	
+
+	public String targetName(Object value) {
+		return MyEcoreUtil.getEObjName(value);
+	}
 
 	@Override
 	public void checkChange() {

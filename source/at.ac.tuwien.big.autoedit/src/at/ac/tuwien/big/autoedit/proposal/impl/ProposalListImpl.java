@@ -1,6 +1,7 @@
 package at.ac.tuwien.big.autoedit.proposal.impl;
 
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.PriorityQueue;
 import java.util.WeakHashMap;
 
@@ -53,6 +54,11 @@ public class ProposalListImpl<T extends Comparable<T>, U extends Proposal<T,U>> 
 	@Override
 	public void setMaxProposals(int proposals) {
 		this.maxProposals = proposals;
+	}
+
+	@Override
+	public void removeProposal(Proposal p) {
+		queue.remove(p);
 	}
 
 }

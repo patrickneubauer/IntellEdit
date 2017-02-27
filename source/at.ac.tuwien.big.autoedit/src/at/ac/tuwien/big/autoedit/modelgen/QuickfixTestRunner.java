@@ -41,6 +41,7 @@ import at.ac.tuwien.big.autoedit.oclvisit.FixAttemptReference;
 import at.ac.tuwien.big.autoedit.oclvisit.FixAttemptReferenceImpl;
 import at.ac.tuwien.big.autoedit.oclvisit.FixAttemptReferenceInfo;
 import at.ac.tuwien.big.autoedit.proposal.Proposal;
+import at.ac.tuwien.big.autoedit.proposal.Proposal.Source;
 import at.ac.tuwien.big.autoedit.proposal.impl.ProposalImpl;
 import at.ac.tuwien.big.autoedit.search.local.NeighborhoodProvider;
 import at.ac.tuwien.big.autoedit.search.local.SimpleStream;
@@ -168,7 +169,7 @@ public class QuickfixTestRunner implements DynamicValidatorIFace {
 					}
 				}
 				//It is in the pareto-set
-				ProposalImpl ret = new ProposalImpl<>(processed);
+				ProposalImpl ret = new ProposalImpl<>(Source.LOCAL,processed);
 				
 				ret.setCosts(curCosts);
 				ret.setCurQuality(fixedConstraints);
@@ -191,7 +192,7 @@ public class QuickfixTestRunner implements DynamicValidatorIFace {
 			}
 		});
 		if (search != null) {
-			search.setResource(getResource());
+			search.setResource(getResource().getResource());
 			search.changedSomething();
 		}
 	}
@@ -222,6 +223,9 @@ public class QuickfixTestRunner implements DynamicValidatorIFace {
 				Thread.sleep(sleepTime);
 				applyBestProposal();
 			} catch (InterruptedException e) {
+			}
+			if (curQuality == 0.0) {
+				break;
 			}
 		}
 		abort();
@@ -341,7 +345,7 @@ public class QuickfixTestRunner implements DynamicValidatorIFace {
 						}*/
 						boolean addBasicId = true;
 
-						Proposal<Double,?> prop = new ProposalImpl<>(nc);
+						Proposal<Double,?> prop = new ProposalImpl<>(Source.LOCAL,nc);
 						prop.setCurQuality(resolved);
 						prop.setQuality(changeEval);
 						prop.setCosts(costs);
@@ -407,6 +411,16 @@ public class QuickfixTestRunner implements DynamicValidatorIFace {
 				} catch (Exception e) {
 					e.printStackTrace();
 					System.err.println("Finalize exception " + e.getMessage());
+				}
+			}
+		}
+		for (int i = 0; i < allThreads.length; ++i) {
+			if (allThreads[i] !=  null && allThreads[i].isAlive()) {
+				try {
+					allThreads[i].join();
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
 				}
 			}
 		}

@@ -27,7 +27,13 @@ public interface EvalResult {
 	public AttemptQualityMap getQualityMap();
 	
 	public default boolean isOk() {
-		return getPossibleFixes().isEmpty();
+		Object result = getResult();
+		for (FixAttempt at: getPossibleFixes()) {
+			if (!at.isFulfilled(result)) {
+				return false;
+			}
+		}
+		return true;
 	}
 	
 	public default void maxQuality(FixAttempt attempt, double compareQuality) {

@@ -3,7 +3,6 @@ package at.ac.tuwien.big.autoedit.change;
 import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EObject;
 
-import net.ricecode.similarity.LevenshteinDistanceStrategy;
 
 public interface CostProvider {
 	

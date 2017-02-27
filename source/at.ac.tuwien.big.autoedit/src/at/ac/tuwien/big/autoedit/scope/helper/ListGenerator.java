@@ -15,7 +15,7 @@ import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.util.EcoreUtil;
 
-import at.tuwien.big.virtmod.datatype.IteratorUtils;
+import at.ac.tuwien.big.xtext.util.IteratorUtils;
 
 public class ListGenerator {
 	

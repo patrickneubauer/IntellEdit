@@ -6,7 +6,7 @@ import java.util.Objects;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EStructuralFeature;
 
-import at.ac.tuwien.big.autoedit.ecore.util.MyEcoreUtil;
+import at.ac.tuwien.big.xtext.util.MyEcoreUtil;
 
 public class FixAttemptFeatureReferenceImpl extends FixAttemptReferenceImpl implements FixAttemptFeatureReference {
 	

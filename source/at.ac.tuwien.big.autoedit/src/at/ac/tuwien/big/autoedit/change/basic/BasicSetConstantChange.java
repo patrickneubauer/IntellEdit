@@ -16,11 +16,11 @@ import at.ac.tuwien.big.autoedit.change.Change;
 import at.ac.tuwien.big.autoedit.change.CostProvider;
 import at.ac.tuwien.big.autoedit.change.EObjectChangeMap;
 import at.ac.tuwien.big.autoedit.change.Undoer;
-import at.ac.tuwien.big.autoedit.ecore.util.MyEcoreUtil;
 import at.ac.tuwien.big.autoedit.oclvisit.FixAttemptFeatureReferenceImpl;
 import at.ac.tuwien.big.autoedit.oclvisit.FixAttemptReference;
 import at.ac.tuwien.big.autoedit.transfer.ETransferrable;
 import at.ac.tuwien.big.autoedit.transfer.EcoreTransferFunction;
+import at.ac.tuwien.big.xtext.util.MyEcoreUtil;
 
 public class BasicSetConstantChange extends AbstractFeatureChange<BasicSetConstantChange> implements FeatureChange<BasicSetConstantChange> {
 
@@ -63,6 +63,8 @@ public class BasicSetConstantChange extends AbstractFeatureChange<BasicSetConsta
 		}
 	}
 	
+	private Object previous;
+	
 	@Override
 	public Undoer execute() {
 		try {
@@ -84,7 +86,7 @@ public class BasicSetConstantChange extends AbstractFeatureChange<BasicSetConsta
 					if (Objects.equals(oldValue, value)) {
 						return Undoer.EMPTY;
 					}
-					costs+= costProvider().getFunction(value).getCosts(l.get(index),value);					
+					costs+= costProvider().getFunction(value).getCosts(previous = l.get(index),value);					
 					l.set(index,value);
 					return ()->{
 						l.set(index,oldValue);
@@ -138,7 +140,7 @@ public class BasicSetConstantChange extends AbstractFeatureChange<BasicSetConsta
 
 	@Override
 	protected String getAdditionalValueName() {
-		return " to "+value;
+		return " to "+targetName(value);
 	}
 
 	public int hashCode() {
@@ -171,6 +173,14 @@ public class BasicSetConstantChange extends AbstractFeatureChange<BasicSetConsta
 	@Override
 	public double getCosts() {
 		return  costs;
+	}
+	
+	public Object getValue() {
+		return value;
+	}
+	
+	public int getIndex() {
+		return index;
 	}
 	
 

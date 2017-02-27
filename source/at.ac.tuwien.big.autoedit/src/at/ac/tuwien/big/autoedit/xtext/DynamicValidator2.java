@@ -36,7 +36,6 @@ import org.eclipse.xtext.validation.Issue;
 
 import at.ac.tuwien.big.autoedit.change.Change;
 import at.ac.tuwien.big.autoedit.change.ChangeType;
-import at.ac.tuwien.big.autoedit.ecore.util.MyEcoreUtil;
 import at.ac.tuwien.big.autoedit.ecore.util.MyResource;
 import at.ac.tuwien.big.autoedit.evaluate.Evaluable;
 import at.ac.tuwien.big.autoedit.evaluate.EvaluableManager;
@@ -67,6 +66,7 @@ import at.ac.tuwien.big.autoedit.search.local.impl.SearchTask;
 import at.ac.tuwien.big.autoedit.search.local.impl.ViolatedConstraintsEvaluator;
 import at.ac.tuwien.big.autoedit.transfer.EcoreTransferFunction;
 import at.ac.tuwien.big.autoedit.transfer.URIBasedEcoreTransferFunction;
+import at.ac.tuwien.big.xtext.util.MyEcoreUtil;
 import jmetal.util.comparators.ViolatedConstraintComparator;
 
 public class DynamicValidator2 extends org.eclipse.xtext.validation.AbstractDeclarativeValidator implements DynamicValidatorIFace{

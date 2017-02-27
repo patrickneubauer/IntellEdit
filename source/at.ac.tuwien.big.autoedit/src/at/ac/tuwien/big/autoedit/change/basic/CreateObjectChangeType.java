@@ -12,7 +12,7 @@ import at.ac.tuwien.big.autoedit.change.ParameterType;
 import at.ac.tuwien.big.autoedit.change.parameter.SimpleParameter;
 import at.ac.tuwien.big.autoedit.scope.EqualProbabilityScope;
 import at.ac.tuwien.big.autoedit.transfer.TransferFunction;
-import at.tuwien.big.virtmod.datatype.IteratorUtils;
+import at.ac.tuwien.big.xtext.util.IteratorUtils;
 
 public class CreateObjectChangeType
 	extends ParameterHolderChangeType<CreateObjectChangeType, CreateObjectChange>

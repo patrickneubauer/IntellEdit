@@ -18,15 +18,18 @@ import at.ac.tuwien.big.autoedit.oclvisit.fixinggenerators.AllInstancesAttemptRe
 import at.ac.tuwien.big.autoedit.oclvisit.fixinggenerators.ApplyAllInstancesChanges;
 import at.ac.tuwien.big.autoedit.oclvisit.fixinggenerators.ApplyAnyAllInstancesChanges;
 import at.ac.tuwien.big.autoedit.oclvisit.fixinggenerators.ApplyChangePropertyCallChanges;
+import at.ac.tuwien.big.autoedit.oclvisit.fixinggenerators.ApplyFixRegexpChanges;
 import at.ac.tuwien.big.autoedit.oclvisit.fixinggenerators.ApplyMakeEqualChanges;
 import at.ac.tuwien.big.autoedit.oclvisit.fixinggenerators.BasicQualityCalculator;
 import at.ac.tuwien.big.autoedit.oclvisit.fixinggenerators.BooleanOpQualityCalculator;
 import at.ac.tuwien.big.autoedit.oclvisit.fixinggenerators.FakeIdentityExpressions;
+import at.ac.tuwien.big.autoedit.oclvisit.fixinggenerators.FixRegexpChanges;
 import at.ac.tuwien.big.autoedit.oclvisit.fixinggenerators.BooleanOpQualityCalculator.BooleanOpCalculator;
 import at.ac.tuwien.big.autoedit.oclvisit.fixinggenerators.NumberToSetPropagation;
 import at.ac.tuwien.big.autoedit.oclvisit.fixinggenerators.PropagateBooleanChanges;
 import at.ac.tuwien.big.autoedit.oclvisit.fixinggenerators.PropagateCollectChanges;
 import at.ac.tuwien.big.autoedit.oclvisit.fixinggenerators.PropagateEqualChanges;
+import at.ac.tuwien.big.autoedit.oclvisit.fixinggenerators.PropagateIfChanges;
 import at.ac.tuwien.big.autoedit.oclvisit.fixinggenerators.PropagateIteratorChanges;
 import at.ac.tuwien.big.autoedit.oclvisit.fixinggenerators.PropagatePropertyCallExp;
 import at.ac.tuwien.big.autoedit.oclvisit.fixinggenerators.PropagateSetChanges;
@@ -40,7 +43,7 @@ import at.ac.tuwien.big.autoedit.oclvisit.fixinggenerators.BasicEqualOpQualityCa
 import at.ac.tuwien.big.autoedit.oclvisit.fixinggenerators.StringEqualityQualityCalculator;
 import at.ac.tuwien.big.autoedit.oclvisit.fixinggenerators.SwallowSelfChange;
 import at.ac.tuwien.big.autoedit.oclvisit.impl.FixActionMapImpl;
-import at.tuwien.big.virtmod.datatype.IteratorUtils;
+import at.ac.tuwien.big.xtext.util.IteratorUtils;
 
 public class RejectingFilterManager {
 	
@@ -84,6 +87,7 @@ public class RejectingFilterManager {
 	public void initDefault() {
 		addFixingActionGenerator(ApplyAllInstancesChanges.INSTANCE);
 		addFixingActionGenerator(ApplyMakeEqualChanges.INSTANCE);
+		addFixingActionGenerator(ApplyFixRegexpChanges.INSTANCE);
 		addFixingActionGenerator(ApplyAnyAllInstancesChanges.INSTANCE);
 		addFixingActionGenerator(ApplyChangePropertyCallChanges.INSTANCE);
 		addFixingGenerators(FakeIdentityExpressions.INSTANCES);
@@ -93,8 +97,10 @@ public class RejectingFilterManager {
 		addFixingGenerators(PropagateSetRelationChanges.INSTANCES);
 		addFixingGenerator(NumberToSetPropagation.INSTANCE);
 		addFixingGenerator(PropagateBooleanChanges.INSTANCE);
+		addFixingGenerator(FixRegexpChanges.INSTANCE);
 		
 		addFixingGenerator(PropagateEqualChanges.EQUAL);
+		addFixingGenerator(PropagateIfChanges.INSTANCE);
 		addFixingGenerator(PropagateEqualChanges.UNEQUAL);
 		addFixingGenerator(PropagateSumChanges.INSTANCE);;
 		addFixingGenerator(PropagateCollectChanges.INSTANCE);

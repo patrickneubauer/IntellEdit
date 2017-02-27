@@ -13,6 +13,7 @@ import at.ac.tuwien.big.autoedit.fixer.FixAttempt;
 import at.ac.tuwien.big.autoedit.fixer.MakeFalse;
 import at.ac.tuwien.big.autoedit.fixer.MakeTrue;
 import at.ac.tuwien.big.autoedit.fixer.impl.MakeFalseImpl;
+import at.ac.tuwien.big.autoedit.fixer.impl.MakeTrueImpl;
 import at.ac.tuwien.big.autoedit.fixer.impl.SetRemoveImpl;
 import at.ac.tuwien.big.autoedit.oclvisit.AbstractSelectiveEvaluator;
 import at.ac.tuwien.big.autoedit.oclvisit.EvalResult;
@@ -91,9 +92,9 @@ public class PropagateIteratorChanges   extends AbstractSelectiveEvaluator<Itera
 				for (int i = 1; i < fixAttemptsPerSub.length; ++i) {
 					OCLBooleanState sub = subStates.get(i);
 					if (sub != OCLBooleanState.TRUE) {
-						fixAttemptsPerSub[i].add(MakeTrue.INSTANCE);
+						fixAttemptsPerSub[i].add(MakeTrueImpl.INSTANCE);
 					} else {
-						fixAttemptsPerSub[i].add(MakeFalse.INSTANCE);
+						fixAttemptsPerSub[i].add(MakeFalseImpl.INSTANCE);
 					}
 					srcRes.addPossibleFix(new SetRemoveImpl(indexedList.get(i-1)));
 					//TODO: For forall/false, exists/true, you might want to add some element ...
@@ -104,13 +105,13 @@ public class PropagateIteratorChanges   extends AbstractSelectiveEvaluator<Itera
 					//Make more true
 					for (int i = 1; i < fixAttemptsPerSub.length; ++i) {
 						OCLBooleanState sub = subStates.get(i);
-						fixAttemptsPerSub[i].add(MakeTrue.INSTANCE);
+						fixAttemptsPerSub[i].add(MakeTrueImpl.INSTANCE);
 					}
 				} else if (foundTrue > 1) {
 					//Make more false
 					for (int i = 1; i < fixAttemptsPerSub.length; ++i) {
 						OCLBooleanState sub = subStates.get(i);
-						fixAttemptsPerSub[i].add(MakeFalse.INSTANCE);
+						fixAttemptsPerSub[i].add(MakeFalseImpl.INSTANCE);
 					}
 					
 				}

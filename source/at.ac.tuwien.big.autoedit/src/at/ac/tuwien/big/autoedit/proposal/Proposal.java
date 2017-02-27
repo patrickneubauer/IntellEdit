@@ -1,5 +1,8 @@
 package at.ac.tuwien.big.autoedit.proposal;
 
+import java.util.List;
+
+import at.ac.tuwien.big.autoedit.change.BasicChange;
 import at.ac.tuwien.big.autoedit.change.Change;
 import at.ac.tuwien.big.autoedit.ecore.util.MyResource;
 import at.ac.tuwien.big.autoedit.oclvisit.fixinggenerators.GetQualityFunc;
@@ -55,5 +58,7 @@ public interface Proposal<T extends Comparable<T>, U extends Proposal<T,U>>  ext
 	public double getCosts();
 	
 	public void setCosts(double costs);
+
+	public List<BasicChange<?>> getBasicChanges();
 
 }

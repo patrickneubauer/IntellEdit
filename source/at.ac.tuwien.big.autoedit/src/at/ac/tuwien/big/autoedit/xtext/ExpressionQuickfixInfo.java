@@ -58,7 +58,7 @@ public  class ExpressionQuickfixInfo<T extends Comparable<T>> {
 			String invisibleString = Change.costToInvisible(prop.getCurQuality(), false)+str+Change.costToInvisible(prop.getCosts(),true);*/
 			String imageStr = prop.getSource()==Source.LOCAL?QuickfixReferenceImpl.LOCAL_IMAGE:QuickfixReferenceImpl.GENETIC_IMAGE;
 			ret.add(new QuickfixReferenceImpl(change.getName(contextUri),
-				change.toString(contextUri)+", Local-Score: " + prop.getCurQuality()+", Score: " + prop.getQuality()+", Cost "+prop.getCosts(), change,
+				change.toString(contextUri)+", \n\t\tLocal-Score: " + prop.getCurQuality()+", Score: " + prop.getQuality()+", Cost "+prop.getCosts(), change,
 				new double[]{-prop.getCurQuality(),-(Double)prop.getQuality(),prop.getCosts()},imageStr));
 		}
 		return ret;
@@ -126,6 +126,12 @@ public  class ExpressionQuickfixInfo<T extends Comparable<T>> {
 			ret|= list.iterator().hasNext();
 		}
 		return ret;
+	}
+
+	public void removeProposal(Proposal p) {
+		for (ProposalList pl: subIdToChangeMap.values()) {
+			pl.removeProposal(p);
+		}
 	}
 
 }

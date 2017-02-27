@@ -11,7 +11,7 @@ import java.util.Map.Entry;
 
 import at.ac.tuwien.big.autoedit.transfer.ETransferrable;
 import at.ac.tuwien.big.autoedit.transfer.EcoreTransferFunction;
-import at.tuwien.big.virtmod.datatype.IteratorUtils;
+import at.ac.tuwien.big.xtext.util.IteratorUtils;
 
 /***Der Double gibt an, wie oft - relativ gesehen - eine Lösung vorkommen sollte*/
 public class SimpleMapValueScope<T> implements ValueScope<T, Double> {

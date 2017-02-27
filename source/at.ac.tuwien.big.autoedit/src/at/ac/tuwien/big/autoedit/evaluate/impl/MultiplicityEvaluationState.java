@@ -8,7 +8,6 @@ import org.eclipse.emf.ecore.EStructuralFeature;
 import at.ac.tuwien.big.autoedit.change.ParameterType;
 import at.ac.tuwien.big.autoedit.change.basic.FixedAddConstantChangeType;
 import at.ac.tuwien.big.autoedit.change.basic.FixedDeleteConstantChangeType;
-import at.ac.tuwien.big.autoedit.ecore.util.MyEcoreUtil;
 import at.ac.tuwien.big.autoedit.ecore.util.MyResource;
 import at.ac.tuwien.big.autoedit.evaluate.EvaluationState;
 import at.ac.tuwien.big.autoedit.fixer.FixAttempt;
@@ -21,6 +20,7 @@ import at.ac.tuwien.big.autoedit.oclvisit.SimpleResult;
 import at.ac.tuwien.big.autoedit.search.local.LocalSearchInterface;
 import at.ac.tuwien.big.autoedit.search.local.LocalSearchManager;
 import at.ac.tuwien.big.autoedit.search.local.NeighborhoodProvider;
+import at.ac.tuwien.big.xtext.util.MyEcoreUtil;
 
 public class MultiplicityEvaluationState implements EvaluationState<MultiplicityEvaluationState> {
 	

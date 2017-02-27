@@ -26,12 +26,12 @@ import at.ac.tuwien.big.autoedit.change.Change;
 import at.ac.tuwien.big.autoedit.change.CostProvider;
 import at.ac.tuwien.big.autoedit.change.EObjectChangeMap;
 import at.ac.tuwien.big.autoedit.change.Undoer;
-import at.ac.tuwien.big.autoedit.ecore.util.MyEcoreUtil;
 import at.ac.tuwien.big.autoedit.ecore.util.MyResource;
 import at.ac.tuwien.big.autoedit.oclvisit.FixAttemptReference;
 import at.ac.tuwien.big.autoedit.oclvisit.FixAttemptReferenceImpl;
 import at.ac.tuwien.big.autoedit.transfer.EcoreTransferFunction;
 import at.ac.tuwien.big.autoedit.transfer.TransferFunction;
+import at.ac.tuwien.big.xtext.util.MyEcoreUtil;
 
 public class DeleteObjectChange implements ObjectChange<DeleteObjectChange> {
 	

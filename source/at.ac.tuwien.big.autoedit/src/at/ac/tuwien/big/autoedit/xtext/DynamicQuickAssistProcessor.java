@@ -16,7 +16,6 @@ import at.ac.tuwien.big.autoedit.xtext.DynamicQuickfixProvider.ChangeIModificati
 
 public class DynamicQuickAssistProcessor extends XtextQuickAssistProcessor {
 	
-	
 	protected void sortQuickfixes(List<ICompletionProposal> quickFixes) {
 		Collections.sort(quickFixes, new Comparator<ICompletionProposal>() {
 			public int compare(ICompletionProposal o1, ICompletionProposal o2) {

@@ -9,6 +9,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -27,6 +28,8 @@ import org.eclipse.emf.ecore.EPackage;
 import org.eclipse.emf.ecore.EStructuralFeature;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.ltk.core.refactoring.CompositeChange;
+import org.eclipse.ocl.ecore.OCLExpression;
+import org.eclipse.ocl.helper.OCLHelper;
 import org.eclipse.xtext.resource.XtextResource;
 import org.eclipse.xtext.util.CancelIndicator;
 import org.eclipse.xtext.validation.Check;
@@ -35,10 +38,12 @@ import org.eclipse.xtext.validation.CheckType;
 import org.eclipse.xtext.validation.EValidatorRegistrar;
 import org.eclipse.xtext.validation.Issue;
 
+import com.google.common.base.Objects;
+
+import at.ac.tuwien.big.autoedit.change.BasicChange;
 import at.ac.tuwien.big.autoedit.change.Change;
 import at.ac.tuwien.big.autoedit.change.ChangeType;
 import at.ac.tuwien.big.autoedit.change.composite.CompositeChangeImpl;
-import at.ac.tuwien.big.autoedit.ecore.util.MyEcoreUtil;
 import at.ac.tuwien.big.autoedit.ecore.util.MyResource;
 import at.ac.tuwien.big.autoedit.evaluate.Evaluable;
 import at.ac.tuwien.big.autoedit.evaluate.EvaluableManager;
@@ -47,6 +52,9 @@ import at.ac.tuwien.big.autoedit.evaluate.EvaluationState;
 import at.ac.tuwien.big.autoedit.evaluate.impl.EvaluableManagerImpl;
 import at.ac.tuwien.big.autoedit.evaluate.impl.EvaluableReference;
 import at.ac.tuwien.big.autoedit.evaluate.impl.EvaluableReferenceImpl;
+import at.ac.tuwien.big.autoedit.evaluate.impl.MultiplicityEvaluable;
+import at.ac.tuwien.big.autoedit.evaluate.impl.OCLExpressionEvaluable;
+import at.ac.tuwien.big.autoedit.evaluate.impl.XmlDatatypeEvaluable;
 import at.ac.tuwien.big.autoedit.fixer.FixAttempt;
 import at.ac.tuwien.big.autoedit.fixer.impl.ChangeSomethingImpl;
 import at.ac.tuwien.big.autoedit.global.GlobalSearch;
@@ -59,6 +67,7 @@ import at.ac.tuwien.big.autoedit.oclvisit.FixAttemptReferenceImpl;
 import at.ac.tuwien.big.autoedit.oclvisit.FixAttemptReferenceInfo;
 import at.ac.tuwien.big.autoedit.proposal.Proposal;
 import at.ac.tuwien.big.autoedit.proposal.Proposal.Source;
+import at.ac.tuwien.big.autoedit.proposal.ProposalList;
 import at.ac.tuwien.big.autoedit.proposal.impl.ProposalImpl;
 import at.ac.tuwien.big.autoedit.search.local.NeighborhoodProvider;
 import at.ac.tuwien.big.autoedit.search.local.SimpleStream;
@@ -69,6 +78,7 @@ import at.ac.tuwien.big.autoedit.search.local.impl.SearchTask;
 import at.ac.tuwien.big.autoedit.search.local.impl.ViolatedConstraintsEvaluator;
 import at.ac.tuwien.big.autoedit.transfer.EcoreTransferFunction;
 import at.ac.tuwien.big.autoedit.transfer.URIBasedEcoreTransferFunction;
+import at.ac.tuwien.big.xtext.util.MyEcoreUtil; 
 import jmetal.util.comparators.ViolatedConstraintComparator;
 
 public class DynamicValidator extends org.eclipse.xtext.validation.AbstractDeclarativeValidator implements DynamicValidatorIFace{
@@ -101,14 +111,22 @@ public class DynamicValidator extends org.eclipse.xtext.validation.AbstractDecla
 	
 
 	//public ExecutorService mainExecutor = Executors.newFixedThreadPool(1);
-	
+		
 	private boolean isFinished;
 	
 
 	@Override
-	public void finalize() throws Throwable {
-		abort();
-		super.finalize();
+	public void finalize() throws Throwable {			
+		try {
+			abort();
+		} catch (Exception e) {
+			
+		}
+		try {
+			super.finalize();
+		} catch (Exception e) {
+			
+		}
 	}
 	
 	public final PriorityQueue<SearchTask> searchTask = new PriorityQueue<SearchTask>();
@@ -138,11 +156,11 @@ public class DynamicValidator extends org.eclipse.xtext.validation.AbstractDecla
 		}
 	};
 	
-	Thread[] allThreads = new Thread[Runtime.getRuntime().availableProcessors()];
+	Thread[] allThreads = new Thread[Math.max(Runtime.getRuntime().availableProcessors(),1)];
 	{
 		for (int i = 0; i < allThreads.length; ++i) {
 			allThreads[i] = new Thread(taskRunnable);
-			allThreads[i].setPriority(2);
+			allThreads[i].setPriority(Thread.MIN_PRIORITY);
 			allThreads[i].start();
 		}
 	}
@@ -294,6 +312,21 @@ public class DynamicValidator extends org.eclipse.xtext.validation.AbstractDecla
 			return anyImproved?bestResult:null;
 		}
 		return null;
+	}
+	
+	public static<T> boolean isListWithMissing(Iterable<T> smaller, Iterable<T> larger) {
+		Iterator<T> smallerIter = smaller.iterator();
+		Iterator<T> largerIter = larger.iterator();
+		mainLoop: while (smallerIter.hasNext()) {
+			T next = smallerIter.next();
+			while (largerIter.hasNext()) {
+				if (Objects.equal(next, largerIter.next())) {
+					continue mainLoop;
+				}
+			}
+			return false;
+		}
+		return true;
 	}
 	
 	public Thread resetThread = new Thread(()->{
@@ -562,6 +595,19 @@ public class DynamicValidator extends org.eclipse.xtext.validation.AbstractDecla
 				}
 				
 				String issueDescrBase = "Constraint " +exprId + " invalid!\n" ;
+				if (evaluable instanceof MultiplicityEvaluable) {
+					MultiplicityEvaluable me = (MultiplicityEvaluable)evaluable;
+					issueDescrBase = "Multiplicity of " + me.getFeature()+" must be "+me.getBoundStr();
+				} else if (evaluable instanceof XmlDatatypeEvaluable) {
+					XmlDatatypeEvaluable me = (XmlDatatypeEvaluable)evaluable;
+					issueDescrBase = "Attribute must have XML datatype " + me.getDatatype();
+				} else if (evaluable instanceof OCLExpressionEvaluable) {
+					OCLExpressionEvaluable oe = (OCLExpressionEvaluable)evaluable;
+					String message = oe.evaluateMessage(theObj);
+					if (message != null) {
+						issueDescrBase = message+"\n";
+					} 
+				}
 				String otherIssueDesc = "";
 				Map<FixAttemptReference,String> refToId = new HashMap<FixAttemptReference, String>();
 				Map<String,FixAttemptReference> idToRef = new HashMap<String, FixAttemptReference>();
@@ -641,6 +687,10 @@ public class DynamicValidator extends org.eclipse.xtext.validation.AbstractDecla
 							if (GlobalSearch.FILTER_GRAMMAR_ERROR && changeEvals[ViolatedConstraintsEvaluator.GRAMMAR_ERRORS] > 0.0) {
 								return null;
 							}
+							if (changeEval <= 0.0 && resolved <= 0.0) {
+								//Don't do anything if it doesn't improve anything
+								return null;
+							}
 							
 							if (mainResource instanceof XtextResource) {
 								XtextResource xres = (XtextResource)mainResource;
@@ -662,6 +712,9 @@ public class DynamicValidator extends org.eclipse.xtext.validation.AbstractDecla
 							if (curChange == null) {
 								quickfixChanges.put(curResource, curChange = new Collection[]{new HashSet<Change<?>>(), new ArrayList<Change<?>>()});
 							}
+						
+									
+							
 							if (curChange[0].add(nc)) {
 								curChange[1].add(nc);
 							}
@@ -670,16 +723,52 @@ public class DynamicValidator extends org.eclipse.xtext.validation.AbstractDecla
 							prop.setCurQuality(resolved);
 							prop.setQuality(changeEval);
 							prop.setCosts(costs);
+							List<Proposal> removeProposals = new ArrayList<>();
+							List<BasicChange<?>> myChanges = nc.getReducedBasicChanges();
+							//Check if this is unnecessary
+							Set<String> attemptIds = new HashSet<>();
 							for (FixAttemptReference ref: nc.getFixReferences()) {
 								String id = refToId.get(ref);
 								if (id != null) {
-									addBasicId = false;
-									curInfo.addChange(id, prop);
+									attemptIds.add(id);
 								}
 							}
-							if (addBasicId) {
+							Set<String> lookIds = new HashSet<>(attemptIds);
+							lookIds.add("");
+							for (String id: lookIds) {
+								ProposalList<Double, ? extends Proposal<?,?>> list = curInfo.getChanges(id);
+								for (Proposal<Double,?> p: list.getProposals()) {
+									if (p.getCurQuality() >= prop.getCurQuality() && p.getQuality() >= prop.getQuality())  {
+										List<BasicChange<?>> otherChanges = p.getBasicChanges();
+										//this is candidate for removal
+										if (otherChanges.size() <= myChanges.size()) {
+											if (isListWithMissing(otherChanges, myChanges)) {
+												return null;
+											}
+										}
+									}
+									if (p.getCurQuality() <= prop.getCurQuality() && p.getQuality() <= prop.getQuality()) {
+										List<BasicChange<?>> otherChanges = p.getBasicChanges();
+										//other is candidate for removal
+										if (otherChanges.size() >= myChanges.size()) {
+											if (isListWithMissing(myChanges, otherChanges)) {
+												removeProposals.add(p);
+											}
+										}
+									}
+								}
+							}
+							for (Proposal p: removeProposals) {
+								curInfo.removeProposal(p);
+							}
+							
+							if (attemptIds.isEmpty()) {
 								nc.getFixReferences();
-								curInfo.addChange("", prop);
+								attemptIds.add("");
+							}
+							for (String id: attemptIds) {
+								addBasicId = false;
+								curInfo.addChange(id, prop);
 							}
 							String str = prop.getChange()+" with costs"+prop.getCosts()+" and quality "+prop.getQuality()+"/"+prop.getCurQuality();
 							System.out.println(str);
@@ -716,7 +805,7 @@ public class DynamicValidator extends org.eclipse.xtext.validation.AbstractDecla
 		});
 		} catch (Exception e) {
 			String str = Arrays.toString(e.getStackTrace()).replace(",","\n");
-			System.out.println(str);
+			System.err.println(str);
 		}
 		haveSaved = true;
 	}
@@ -784,4 +873,5 @@ public class DynamicValidator extends org.eclipse.xtext.validation.AbstractDecla
 			}
 		}
 	}
+	
 }

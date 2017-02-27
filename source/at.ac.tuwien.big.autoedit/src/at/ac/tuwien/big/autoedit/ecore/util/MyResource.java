@@ -2,8 +2,8 @@ package at.ac.tuwien.big.autoedit.ecore.util;
 
 import java.lang.ref.SoftReference;
 import java.lang.ref.WeakReference;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -17,6 +17,7 @@ import java.util.Random;
 import java.util.WeakHashMap;
 
 import org.eclipse.emf.common.util.TreeIterator;
+import org.eclipse.emf.ecore.EAnnotation;
 import org.eclipse.emf.ecore.EAttribute;
 import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EClassifier;
@@ -27,8 +28,6 @@ import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EOperation;
 import org.eclipse.emf.ecore.EReference;
 import org.eclipse.emf.ecore.EStructuralFeature;
-import org.eclipse.emf.ecore.EcoreFactory;
-import org.eclipse.emf.ecore.impl.DynamicEObjectImpl;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.resource.impl.ResourceImpl;
 import org.eclipse.emf.ecore.util.EcoreUtil;
@@ -66,6 +65,7 @@ import at.ac.tuwien.big.autoedit.change.primitive.StringGenScope;
 import at.ac.tuwien.big.autoedit.evaluate.Evaluable;
 import at.ac.tuwien.big.autoedit.evaluate.impl.MultiplicityEvaluable;
 import at.ac.tuwien.big.autoedit.evaluate.impl.OCLExpressionEvaluable;
+import at.ac.tuwien.big.autoedit.evaluate.impl.XmlDatatypeEvaluable;
 import at.ac.tuwien.big.autoedit.scope.EqualProbabilityScope;
 import at.ac.tuwien.big.autoedit.scope.Scope;
 import at.ac.tuwien.big.autoedit.scope.ValueScope;
@@ -73,7 +73,10 @@ import at.ac.tuwien.big.autoedit.scope.helper.EvalFunc;
 import at.ac.tuwien.big.autoedit.test.OclExtractor;
 import at.ac.tuwien.big.autoedit.transfer.EcoreMapTransferFunction;
 import at.ac.tuwien.big.autoedit.transfer.EcoreTransferFunction;
-import at.tuwien.big.virtmod.datatype.IteratorUtils;
+import at.ac.tuwien.big.xtext.util.IteratorUtils;
+import at.ac.tuwien.big.xtext.util.MyEcoreUtil;
+import dk.brics.automaton.Automaton;
+import dk.brics.automaton.Datatypes;
 
 public class MyResource {
 	
@@ -83,6 +86,32 @@ public class MyResource {
 		this.res = new SoftReference<Resource>(from);
 		if (from == null) {
 			System.out.println("Null resource!");
+		}
+	}
+	
+	static {
+		
+	}
+	
+	private static boolean loadedautomaton = false;
+	
+	private static void loadAutomaton() {
+		if (!loadedautomaton) {
+			synchronized(MyResource.class) {
+				if (!loadedautomaton) {
+					loadedautomaton = true;
+					try {
+						Method m = Datatypes.class.getDeclaredMethod("buildAll");
+						m.setAccessible(true);
+						m.invoke(null);
+					} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException
+							| SecurityException e) {
+						e.printStackTrace();
+					} catch (Exception e) {
+						System.out.println("TODO: Er kann das nicht vollständig machen, weil er keine Dateien hat ... "+e.getMessage());
+					}
+				}
+			}
 		}
 	}
 	
@@ -105,7 +134,7 @@ public class MyResource {
 	}
 	
 	private List<EStructuralFeature> feat = null;
-	private List<EClass> clsl = new ArrayList<EClass>();
+	private List<EClass> clsl = null;
 	
 	
 	
@@ -214,50 +243,8 @@ public class MyResource {
 	
 	private Map<EClass, List<EObject>> allGenerated = new HashMap<EClass, List<EObject>>();
 
-
 	public synchronized EObject createInstance(EClass targetType) {
-		EcoreFactory fact = EcoreFactory.eINSTANCE;
-		EObject eobj = null;
-		if (targetType.getInstanceClass() != null) {
-			if (targetType.getInstanceClass().isInterface()) {
-				//try to find real
-				String tryName = targetType.getInstanceClass().getCanonicalName();
-				int lind = tryName.lastIndexOf(".");
-				String mainName = tryName.substring(lind+1);
-				String packageName = tryName.substring(0,lind);
-				String wohleName = packageName+".impl."+mainName+"Impl";
-				Class<?> realClass;
-				try {
-					realClass = targetType.getInstanceClass().getClassLoader().loadClass(wohleName);
-					realClass.getDeclaredConstructor().setAccessible(true);
-					if (realClass != null) {
-						targetType.setInstanceClass(realClass);
-					}
-				} catch (ClassNotFoundException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} catch (SecurityException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} catch (NoSuchMethodException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				
-			}
-			try {
-				Constructor c = targetType.getInstanceClass().getDeclaredConstructor();
-				c.setAccessible(true);
-				eobj = (EObject)c.newInstance();
-			} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		} 
-		if (eobj == null) {
-			eobj = new DynamicEObjectImpl(targetType);
-		}
-		return eobj;
+		return MyEcoreUtil.createInstanceStatic(targetType);
 	}
 	
 	public EObject getAndTrackCreated(EClass targetType) {
@@ -321,7 +308,7 @@ public class MyResource {
 	private static class EClassInfo {
 		private List<EClass> instanciableTypes = new ArrayList<EClass>();
 		private List<EClass> subTypesOrSelf = new ArrayList<EClass>();
-		private Map<String,OCLExpression> ownOclExpressions = new HashMap<String,OCLExpression>();
+		private Map<String,OCLExpression[]> ownOclExpressions = new HashMap<>();
 		private List<OCLExpression> totalOclExpressions = new ArrayList<OCLExpression>();
 		private Map<String,Evaluable> ownEvaluators = new HashMap<>();
 		private List<Evaluable<?,?>> totalEvaluators = new ArrayList<>();
@@ -333,6 +320,9 @@ public class MyResource {
 		Map<EClass, EClassInfo> eclassMap = new HashMap<EClass, MyResource.EClassInfo>();
 		Map<OCLExpression,String> oclExpressionToId = new HashMap<>();
 		Map<String,OCLExpression> idToOCLExpression = new HashMap<>();
+		
+		Map<Automaton,String> xmlExpressionToId = new HashMap<>();
+		Map<String,Automaton> idToXmlExpression = new HashMap<>();
 		
 		Map<Evaluable,String> evaluableExpressionToId = new HashMap<>();
 		Map<String,Evaluable> idToEvaluable = new HashMap<>();
@@ -359,6 +349,10 @@ public class MyResource {
 		
 		public OCLExpression getExpression(String forId) {
 			return idToOCLExpression.get(forId);
+		}
+		
+		public Automaton getAutomaton(String forId) {
+			return idToXmlExpression.get(forId);
 		}
 
 		public Collection<EStructuralFeature> getContainersFor(EClass from) {
@@ -527,6 +521,14 @@ public class MyResource {
 		return valueGeneratingParameter;		
 	}
 	
+	public String getStandardType(EAttribute cl) {
+		EAnnotation annot = cl.getEAnnotation("http://big.tuwien.ac.at/standardXMLDatatype");
+		if (annot != null) {
+			return annot.getDetails().get("type");
+		}
+		return null;
+	}
+	
 	public synchronized EcoreInfo getOrBuildEcoreInfo(Resource res) {
 		synchronized(res) {
 		EcoreInfo ecoreInfo = instancibleTypesMap.get(res);;
@@ -560,14 +562,34 @@ public class MyResource {
 			
 			
 			//Get OCL Expressions
+			{
+				for (EAttribute attr: subClass.getEAttributes()) {
+					String standardType = getStandardType(attr);
+					if (standardType != null) {
+						loadAutomaton();
+						Automaton automaton = Datatypes.get(standardType);
+						String xmlId = "AUTO_"+subClass.getName()+"_"+attr.getName();
+						ecoreInfo.xmlExpressionToId.put(automaton,xmlId);
+						ecoreInfo.idToXmlExpression.put(xmlId,automaton);
+						XmlDatatypeEvaluable eval = new XmlDatatypeEvaluable(attr,standardType,automaton);
+						ecoreInfo.evaluableExpressionToId.put(eval, xmlId);
+						ecoreInfo.idToEvaluable.put(xmlId, eval);
+						subMap.ownEvaluators.put(xmlId, eval);
+					}
+				}
+					
+			}
 			
 			Map<String,String> expressionStrForClass = OclExtractor.getConstraintMap(subClass);
-			Map<String,OCLExpression> expressionForClass = OclExtractor.convertToExpression(oclHelper, subClass, expressionStrForClass);
-			for (Entry<String,OCLExpression> entry: expressionForClass.entrySet()) {
+			Map<String,OCLExpression[]> expressionForClass = OclExtractor.convertToExpressionMsg(oclHelper, subClass, expressionStrForClass);
+			for (Entry<String,OCLExpression[]> entry: expressionForClass.entrySet()) {
 				String oclId = "EXPR_"+subClass.getName()+"_"+entry.getKey();
-				ecoreInfo.oclExpressionToId.put(entry.getValue(), oclId);
-				ecoreInfo.idToOCLExpression.put(oclId,entry.getValue());
-				OCLExpressionEvaluable eval = new OCLExpressionEvaluable(entry.getValue());
+				ecoreInfo.oclExpressionToId.put(entry.getValue()[0], oclId);
+				ecoreInfo.idToOCLExpression.put(oclId,entry.getValue()[0]);
+				OCLExpression evalExpr = entry.getValue()[0];
+				OCLExpression messageExpr = entry.getValue()[1];
+				OCLExpression valueExpr = entry.getValue()[2]; //TODO: ... not yet implemented, check if always integer or real ocl expression
+				OCLExpressionEvaluable eval = new OCLExpressionEvaluable(evalExpr,messageExpr);
 				subMap.ownEvaluators.put(entry.getKey(), eval);
 				ecoreInfo.evaluableExpressionToId.put(eval, oclId);
 				ecoreInfo.idToEvaluable.put(oclId, eval);
@@ -604,7 +626,9 @@ public class MyResource {
 			EClassInfo info = entry.getValue();
 			for (EClass cl: info.subTypesOrSelf) {
 				EClassInfo subInfo = eclassMap.get(cl);
-				subInfo.totalOclExpressions.addAll(info.ownOclExpressions.values());
+				for (OCLExpression[] expr: info.ownOclExpressions.values()) {
+					subInfo.totalOclExpressions.add(expr[0]);
+				}
 				subInfo.totalEvaluators.addAll((Collection<? extends Evaluable<?,?>>) info.ownEvaluators.values());
 				subInfo.totalClassContainers.addAll(info.classContainers);
 			}
@@ -695,18 +719,24 @@ public class MyResource {
 	private static Map<Class<?>, ValueScope<?,?>> defaultGenScopes = new HashMap<>();
 	static {
 		defaultGenScopes.put(Long.class, LogLongScope.INSTANCE);
+		defaultGenScopes.put(long.class, LogLongScope.INSTANCE);
 		defaultGenScopes.put(Integer.class, LogIntScope.INSTANCE);
+		defaultGenScopes.put(int.class, LogIntScope.INSTANCE);
 		defaultGenScopes.put(BigInteger.class, LogBigIntegerScope.INSTANCE);
 		defaultGenScopes.put(Boolean.class, BooleanScope.INSTANCE);
+		defaultGenScopes.put(boolean.class, BooleanScope.INSTANCE);
 		defaultGenScopes.put(String.class, StringGenScope.INSTANCE);
 	}
 	
 	private static Map<Class<?>, ScopePerValue<?>> defaultChangeScopes = new HashMap<>();
 	static {
 		defaultChangeScopes.put(Long.class, (x)->(ValueScope)new LogLongChangeScope((long)(Long)x));
+		defaultChangeScopes.put(long.class, (x)->(ValueScope)new LogLongChangeScope((long)(Long)x));
 		defaultChangeScopes.put(Integer.class, (x)->(ValueScope)new LogIntChangeScope((int)(Integer)x));
+		defaultChangeScopes.put(int.class, (x)->(ValueScope)new LogIntChangeScope((int)(Integer)x));
 		defaultChangeScopes.put(BigInteger.class, (x)->(ValueScope)new LogBigIntegerChangeScope((BigInteger)x));
 		defaultChangeScopes.put(Boolean.class, ScopePerValue.staticScopePerValue(BooleanScope.INSTANCE));
+		defaultChangeScopes.put(boolean.class, ScopePerValue.staticScopePerValue(BooleanScope.INSTANCE));
 		defaultChangeScopes.put(String.class, (x)->(ValueScope)StringChangeScope.getScope((String)x, true, true, true));
 	}
 	

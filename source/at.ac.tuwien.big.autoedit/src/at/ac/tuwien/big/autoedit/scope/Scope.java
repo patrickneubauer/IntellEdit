@@ -3,7 +3,7 @@ package at.ac.tuwien.big.autoedit.scope;
 import java.util.Iterator;
 import java.util.Map.Entry;
 
-import at.tuwien.big.virtmod.datatype.IteratorUtils;
+import at.ac.tuwien.big.xtext.util.IteratorUtils;
 
 /**A scope contains a set of solutions*/
 public interface Scope<Solution,Quality extends Comparable<Quality>> extends Iterable<Solution> {

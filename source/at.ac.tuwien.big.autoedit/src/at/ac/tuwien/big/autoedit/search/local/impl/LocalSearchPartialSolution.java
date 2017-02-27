@@ -121,4 +121,8 @@ public class LocalSearchPartialSolution implements Comparable<LocalSearchPartial
 		return ret;
 	}
 
+	public void clearFixes() {
+		directFixes.clear();
+	}
+
 }

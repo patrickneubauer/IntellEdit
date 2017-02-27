@@ -4,7 +4,7 @@ import java.util.Iterator;
 
 import at.ac.tuwien.big.autoedit.scope.ValueScope;
 import at.ac.tuwien.big.autoedit.transfer.EcoreTransferFunction;
-import at.tuwien.big.virtmod.datatype.IteratorUtils;
+import at.ac.tuwien.big.xtext.util.IteratorUtils;
 
 public class LogIntScope implements ValueScope<Integer, Boolean>{
 	private LogLongScope base = new LogLongScope();

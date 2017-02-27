@@ -85,7 +85,7 @@ public class OCLExpressionEvaluationState implements EvaluationState<OCLExpressi
 				if (!fullEval) {
 					evaluateFull();
 				}
-				quality = man.calculateSingleQuality(getResult(), MakeTrue.INSTANCE);
+				quality = man.calculateSingleQuality(getResult(), MakeTrueImpl.INSTANCE);
 			} catch (Exception e) {
 				return 0.0;
 			}

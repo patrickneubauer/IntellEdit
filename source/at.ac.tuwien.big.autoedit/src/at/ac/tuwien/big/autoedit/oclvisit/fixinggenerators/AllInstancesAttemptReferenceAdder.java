@@ -55,7 +55,7 @@ public class AllInstancesAttemptReferenceAdder extends AbstractSelectiveEvaluato
 				for (EStructuralFeature feat: features) {
 					if (feat.getEContainingClass().isSuperTypeOf(obj.eClass())) {
 						info.addFixAttemptReference(new FixAttemptFeatureReferenceImpl(obj,
-								feat),new EvaluableReferenceImpl<>(new OCLExpressionEvaluable(expr)),singleAttemptForThis);	
+								feat),new EvaluableReferenceImpl<>(new OCLExpressionEvaluable(expr,null)),singleAttemptForThis);	
 					}
 				}
 			}

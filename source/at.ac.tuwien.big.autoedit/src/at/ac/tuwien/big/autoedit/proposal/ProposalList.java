@@ -21,4 +21,6 @@ public interface ProposalList<T extends Comparable<T>, U extends Proposal<T,U>> 
 
 	public boolean isEmpty();
 
+	public void removeProposal(Proposal p);
+
 }

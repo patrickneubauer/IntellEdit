@@ -155,7 +155,8 @@ public class StringChangeScope implements ValueScope<String, Boolean> {
 	
 	public int getMaxIndex() {
 		//Change, Delete, Add
-		return (allowChange?base.length()*replaceChars.length:0)+(allowDelete?base.length():0)+(allowAdd?(base.length()+1)*replaceChars.length:0);
+		return (allowChange?base.length()*replaceChars.length:0)+
+				(allowDelete?base.length():0)+(allowAdd?(base.length()+1)*replaceChars.length:0);
 	}
 	
 	public String getIndexed(int idx) {
@@ -206,6 +207,7 @@ public class StringChangeScope implements ValueScope<String, Boolean> {
 			@Override
 			public String next() {
 				String ret = getIndexed(curIndex);
+				System.out.println("Evaluating "+base+" -> "+ret);
 				++curIndex;
 				return ret;
 			}
@@ -231,7 +233,9 @@ public class StringChangeScope implements ValueScope<String, Boolean> {
 
 			@Override
 			public String next() {
-				return getIndexed(random.nextInt(maxIndex));
+				String ret = getIndexed(random.nextInt(maxIndex));
+				System.out.println("Random Evaluating "+base+" -> "+ret);
+				return ret;
 			}
 		};
 	}

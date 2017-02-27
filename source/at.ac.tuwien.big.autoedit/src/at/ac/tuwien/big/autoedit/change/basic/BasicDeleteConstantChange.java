@@ -16,10 +16,10 @@ import at.ac.tuwien.big.autoedit.change.Change;
 import at.ac.tuwien.big.autoedit.change.CostProvider;
 import at.ac.tuwien.big.autoedit.change.EObjectChangeMap;
 import at.ac.tuwien.big.autoedit.change.Undoer;
-import at.ac.tuwien.big.autoedit.ecore.util.MyEcoreUtil;
 import at.ac.tuwien.big.autoedit.oclvisit.FixAttemptFeatureReferenceImpl;
 import at.ac.tuwien.big.autoedit.oclvisit.FixAttemptReference;
 import at.ac.tuwien.big.autoedit.transfer.EcoreTransferFunction;
+import at.ac.tuwien.big.xtext.util.MyEcoreUtil;
 
 public class BasicDeleteConstantChange extends AbstractFeatureChange<BasicDeleteConstantChange> implements FeatureChange<BasicDeleteConstantChange> {
 
@@ -124,7 +124,7 @@ public class BasicDeleteConstantChange extends AbstractFeatureChange<BasicDelete
 
 	@Override
 	protected String getAdditionalValueName() {
-		return ""+value;
+		return ""+targetName(value);
 	}
 
 	public int hashCode() {

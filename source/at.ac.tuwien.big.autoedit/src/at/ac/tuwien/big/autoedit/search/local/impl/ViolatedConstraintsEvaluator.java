@@ -24,7 +24,6 @@ import org.eclipse.ocl.ecore.OCLExpression;
 
 import at.ac.tuwien.big.autoedit.change.Change;
 import at.ac.tuwien.big.autoedit.change.Undoer;
-import at.ac.tuwien.big.autoedit.ecore.util.MyEcoreUtil;
 import at.ac.tuwien.big.autoedit.ecore.util.MyResource;
 import at.ac.tuwien.big.autoedit.evaluate.Evaluable;
 import at.ac.tuwien.big.autoedit.evaluate.EvaluableManager;
@@ -45,6 +44,7 @@ import at.ac.tuwien.big.autoedit.oclvisit.FixAttemptReferenceImpl;
 import at.ac.tuwien.big.autoedit.oclvisit.RejectingFilterManager;
 import at.ac.tuwien.big.autoedit.oclvisit.TracingEvaluationVisitor;
 import at.ac.tuwien.big.autoedit.transfer.EcoreTransferFunction;
+import at.ac.tuwien.big.xtext.util.MyEcoreUtil;
 
 public class ViolatedConstraintsEvaluator implements ResourceEvaluator<Evaluation>{
 

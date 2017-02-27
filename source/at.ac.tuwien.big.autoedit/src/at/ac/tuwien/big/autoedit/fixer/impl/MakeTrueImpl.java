@@ -4,7 +4,7 @@ import at.ac.tuwien.big.autoedit.fixer.MakeTrue;
 
 public class MakeTrueImpl implements MakeTrue {
 
-	public static MakeTrueImpl INSTANCE = new MakeTrueImpl();
+	public static final MakeTrueImpl INSTANCE = new MakeTrueImpl();
 	
 	public boolean equals(Object other) {
 		return other instanceof MakeTrueImpl;

@@ -14,10 +14,10 @@ import at.ac.tuwien.big.autoedit.change.Change;
 import at.ac.tuwien.big.autoedit.change.CostProvider;
 import at.ac.tuwien.big.autoedit.change.EObjectChangeMap;
 import at.ac.tuwien.big.autoedit.change.Undoer;
-import at.ac.tuwien.big.autoedit.ecore.util.MyEcoreUtil;
 import at.ac.tuwien.big.autoedit.oclvisit.FixAttemptFeatureReferenceImpl;
 import at.ac.tuwien.big.autoedit.oclvisit.FixAttemptReference;
 import at.ac.tuwien.big.autoedit.transfer.EcoreTransferFunction;
+import at.ac.tuwien.big.xtext.util.MyEcoreUtil;
 
 public class BasicMoveConstantChange extends AbstractFeatureChange<BasicMoveConstantChange> implements FeatureChange<BasicMoveConstantChange> {
 
@@ -95,7 +95,7 @@ public class BasicMoveConstantChange extends AbstractFeatureChange<BasicMoveCons
 
 	@Override
 	protected String getAdditionalValueName() {
-		return " to "+targetContainer;
+		return " to "+targetName(targetContainer);
 	}
 
 	public int hashCode() {

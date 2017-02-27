@@ -22,7 +22,6 @@ import at.ac.tuwien.big.autoedit.change.ParameterType;
 import at.ac.tuwien.big.autoedit.change.basic.BasicSetConstantChange;
 import at.ac.tuwien.big.autoedit.change.basic.FixedClearChangeType;
 import at.ac.tuwien.big.autoedit.change.basic.FixedSetConstantChangeType;
-import at.ac.tuwien.big.autoedit.ecore.util.MyEcoreUtil;
 import at.ac.tuwien.big.autoedit.ecore.util.MyResource;
 import at.ac.tuwien.big.autoedit.fixer.Decrease;
 import at.ac.tuwien.big.autoedit.fixer.FixAttempt;
@@ -36,6 +35,7 @@ import at.ac.tuwien.big.autoedit.oclvisit.ExpressionResult;
 import at.ac.tuwien.big.autoedit.oclvisit.FixActionMap;
 import at.ac.tuwien.big.autoedit.oclvisit.FixingActionGenerator;
 import at.ac.tuwien.big.autoedit.oclvisit.FixingGenerator;
+import at.ac.tuwien.big.xtext.util.MyEcoreUtil;
 
 public class ApplyMakeEqualChanges  extends AbstractSelectiveEvaluator<PropertyCallExp, Object> implements FixingActionGenerator<PropertyCallExp, Object> {
 
@@ -76,7 +76,7 @@ public class ApplyMakeEqualChanges  extends AbstractSelectiveEvaluator<PropertyC
 			}
 		} else if (singleAttemptForThis instanceof Decrease) {
 			target = ((Decrease)singleAttemptForThis).getAcceptableValueOrNull();
-			if (target == null) {
+			if (target == null) { //TODO: Fix that ...
 				return false;
 			}
 		} else {

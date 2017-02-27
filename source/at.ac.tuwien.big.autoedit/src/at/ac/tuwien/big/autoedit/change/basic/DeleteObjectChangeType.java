@@ -11,11 +11,11 @@ import org.eclipse.emf.ecore.util.EcoreUtil;
 import at.ac.tuwien.big.autoedit.change.Parameter;
 import at.ac.tuwien.big.autoedit.change.ParameterType;
 import at.ac.tuwien.big.autoedit.change.parameter.SimpleParameter;
-import at.ac.tuwien.big.autoedit.ecore.util.MyEcoreUtil;
 import at.ac.tuwien.big.autoedit.scope.EqualProbabilityScope;
 import at.ac.tuwien.big.autoedit.transfer.TransferFunction;
 import at.ac.tuwien.big.oclgen.OCL2JavaSupport;
-import at.tuwien.big.virtmod.datatype.IteratorUtils;
+import at.ac.tuwien.big.xtext.util.IteratorUtils;
+import at.ac.tuwien.big.xtext.util.MyEcoreUtil;
 
 public class DeleteObjectChangeType
 	extends ParameterHolderChangeType<DeleteObjectChangeType, DeleteObjectChange>

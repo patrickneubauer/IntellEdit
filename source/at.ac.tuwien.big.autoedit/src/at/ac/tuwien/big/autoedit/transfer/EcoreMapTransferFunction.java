@@ -16,7 +16,7 @@ import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.util.EcoreUtil;
 import org.jfree.chart.plot.IntervalMarker;
 
-import at.ac.tuwien.big.autoedit.ecore.util.MyEcoreUtil;
+import at.ac.tuwien.big.xtext.util.MyEcoreUtil;
 
 public class EcoreMapTransferFunction extends MapTransferFunction<EObject> implements EcoreTransferFunction {
 	

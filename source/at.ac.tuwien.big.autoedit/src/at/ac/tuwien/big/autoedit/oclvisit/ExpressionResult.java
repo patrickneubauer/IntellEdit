@@ -11,8 +11,8 @@ import org.eclipse.ocl.expressions.IteratorExp;
 import org.eclipse.ocl.expressions.OCLExpression;
 import org.eclipse.ocl.expressions.OperationCallExp;
 
-import at.ac.tuwien.big.autoedit.ecore.util.MyEcoreUtil;
 import at.ac.tuwien.big.autoedit.oclvisit.fixinggenerators.PropagateBooleanChanges.OCLBooleanState;
+import at.ac.tuwien.big.xtext.util.MyEcoreUtil;
 
 public class ExpressionResult extends EvalResultBase implements EvalResult {
 

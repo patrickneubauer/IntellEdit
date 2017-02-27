@@ -21,8 +21,8 @@ import org.eclipse.emf.ecore.impl.MinimalEObjectImpl;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.util.EcoreUtil;
 
-import at.ac.tuwien.big.autoedit.ecore.util.MyEcoreUtil;
 import at.ac.tuwien.big.autoedit.ecore.util.MyResource;
+import at.ac.tuwien.big.xtext.util.MyEcoreUtil;
 
 public class URIBasedEcoreTransferFunction implements EcoreTransferFunction {
 	

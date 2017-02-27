@@ -1,5 +1,8 @@
 package at.ac.tuwien.big.autoedit.search.local;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -7,11 +10,16 @@ import at.ac.tuwien.big.autoedit.change.Change;
 import at.ac.tuwien.big.autoedit.change.ChangeType;
 import at.ac.tuwien.big.autoedit.oclvisit.EvalResult;
 import at.ac.tuwien.big.autoedit.search.local.impl.LocalSearchPartialSolution;
-import at.tuwien.big.virtmod.datatype.IteratorUtils;
-import at.tuwien.big.virtmod.datatype.IteratorUtils.SimpleFunction;
+import at.ac.tuwien.big.xtext.util.IteratorUtils;
+import at.ac.tuwien.big.xtext.util.IteratorUtils.SimpleFunction;
 
 public interface NeighborhoodProvider {
 
+	public static<T> List<T> randomize(Collection<T> from) {
+		List<T> ret = new ArrayList<T>(from);
+		Collections.shuffle(ret);
+		return ret;
+	}
 	
 	static NeighborhoodProvider DEFAULT_DIRECTFIX = new NeighborhoodProvider() {
 		
@@ -26,6 +34,17 @@ public interface NeighborhoodProvider {
 				}
 			};
 			return ()->IteratorUtils.<ChangeType<?,?>,Change<?>>balancedIterate(x.getDirectFixes().iterator(),iterateFunc);
+		}
+		@Override
+		public Iterable<? extends Change<?>> sampleNeighbours(LocalSearchPartialSolution x) {
+			SimpleFunction<ChangeType<?,? extends Change<?>>, Iterator<? extends Change<?>>> iterateFunc = new SimpleFunction<ChangeType<?,? extends Change<?>>,  Iterator<? extends Change<?>>>() {
+
+				@Override
+				public Iterator<? extends Change<?>> applyTo(ChangeType<?, ? extends Change<?>> x) {
+					return x.sampleWithMissing();
+				}
+			};
+			return ()->IteratorUtils.<ChangeType<?,?>,Change<?>>balancedIterate(randomize(x.getDirectFixes()).iterator(),iterateFunc);
 		}
 		
 		@Override
@@ -42,6 +61,14 @@ public interface NeighborhoodProvider {
 			return ()->(Iterator)iter;
 		}
 		
+
+		@Override
+		public Iterable<? extends Change<?>> sampleNeighbours(LocalSearchPartialSolution x) {
+			
+			Iterator<Change<?>> iter = IteratorUtils.<ChangeType<?,?>,Change<?>>balancedIterate(randomize(x.getDirectFixes()).iterator(), (y)->y.sampleWithMissing());
+			return ()->(Iterator)iter;
+		}
+		
 		@Override
 		public List<ChangeType<?,? extends Change<?>>> getBaseFixes(EvalResult res) {
 			return res.getAllFixingActions();
@@ -50,6 +77,8 @@ public interface NeighborhoodProvider {
 	
 
 	public Iterable<? extends Change<?>> getNeighbours(LocalSearchPartialSolution curSol);
+	
+	public Iterable<? extends Change<?>> sampleNeighbours(LocalSearchPartialSolution curSol);
 	
 	public List<ChangeType<?,? extends Change<?>>> getBaseFixes(EvalResult res);
 }

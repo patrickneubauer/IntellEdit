@@ -13,6 +13,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
+import java.util.Random;
 import java.util.Set;
 import java.util.Stack;
 
@@ -253,7 +254,8 @@ public class LocalSearchInterfaceImpl implements LocalSearchInterface {
 		private int usedSolutions;
 		
 		public Iterator<? extends Change<?>> iter() {
-			if (iter == null) {
+			int i = 0;
+			while (iter == null || !iter.hasNext() && ++i < 10) {
 				iter = provider.getNeighbours(solution).iterator();
 			}
 			return iter;
@@ -280,6 +282,14 @@ public class LocalSearchInterfaceImpl implements LocalSearchInterface {
 		public double getOriginalQuality() {
 			return solution.getImproveQuality();
 		}
+
+		public Iterator<? extends Change<?>> sampledIter() {
+			int i = 0;
+			while (iter == null || !iter.hasNext() && ++i < 10) {
+				iter = provider.sampleNeighbours(solution).iterator();
+			}
+			return iter;
+		}
 	}
 	
 	public void run() {
@@ -287,6 +297,12 @@ public class LocalSearchInterfaceImpl implements LocalSearchInterface {
 	}
 	
 	private int calculatedSolutions = 0;
+	
+	public static enum SearchType {
+		DEFAULT, SIMULATED_ANNEALING
+	}
+	
+	private SearchType curType = SearchType.SIMULATED_ANNEALING;
 
 	@Override
 	public synchronized boolean doSomeSearch() {
@@ -297,6 +313,8 @@ public class LocalSearchInterfaceImpl implements LocalSearchInterface {
 		stepTime = Math.min(totalTime, stepTime);
 		totalTime-= stepTime;
 		double endTime = new Date().getTime()+stepTime;
+		int numActions = 200;
+		int curAction = 0;
 		if (curCheckSolutionIndex < checkSolutions.size()) {
 			
 			for (; curCheckSolutionIndex < checkSolutions.size(); ++curCheckSolutionIndex) {
@@ -353,6 +371,139 @@ public class LocalSearchInterfaceImpl implements LocalSearchInterface {
 		}
 		Copier newCopier = new EcoreUtil.Copier();
 		Resource oldBase = clonedRes.clone(newCopier);
+		
+		if (curType == SearchType.SIMULATED_ANNEALING) {
+			while (!curSolutions.isEmpty()) {
+				if (abort || (++curAction > numActions)) {
+					//System.out.println("Time elapsed!");
+					return false;
+				}
+				if (processedChanges > maxSolutions) {
+					abort = true;
+					return false;
+				}
+				++processedChanges;
+				
+				SolutionState original = curSolutions.poll();
+				
+				int changeNumb = 2;
+				Random random = new Random();
+				while (random.nextBoolean()) {
+					++changeNumb;
+				}
+				
+
+				List<Undoer> undoers = new ArrayList<Undoer>();
+				List<Change<?>> addChanges = new ArrayList<Change<?>>();
+				try {
+				for (Change<?> change: original.getSolution().getChanges()) {
+					undoers.add(change.execute());
+				}
+				
+				SolutionState changed = original;
+				SolutionState best = original;
+				List<LocalSearchPartialSolution> clearSolutions = new ArrayList<LocalSearchPartialSolution>();
+				
+				for (int chn = 0; chn < changeNumb; ++chn) {
+					Iterator<? extends Change<?>> chIter = changed.sampledIter();
+					int noNeighbors = 0;
+					while (chIter.hasNext()) {
+						Change ch = chIter.next();
+						
+						if (ch.isIdentity()) {
+							if (noNeighbors++ >= 10) {
+								break;
+							}
+							continue;
+						}
+						
+
+						addChanges.add(ch);
+						String changeString = String.valueOf(ch);
+						String[] end = changeString.split(" ");
+						String last = end[end.length-1];
+						boolean isOk = false;
+						/*if (last.length() == 10) {
+							isOk = true;
+							for (int i = 0; i < last.length(); ++i) {
+								if (!Character.isDigit(last.charAt(i))) {
+									isOk = false;
+								}
+							}
+							if (isOk) {
+								System.out.println("Good change found: "+changeNumb);
+							}
+						}*/
+						 Undoer undoer = ch.execute();
+						 undoers.add(undoer);
+						 try {
+							 EvaluationState state = manager.basicEvaluate(clonedRes,getOriginalEvaluable(), getContext());
+							 Object ret = state.getBasicResult();
+
+							 EvalResult res = state.getResult();
+							 double curQuality = state.getQuality();
+							 LocalSearchPartialSolution toAdd = changed.getSolution().added(ch, curQuality, provider.getBaseFixes(res));
+							 SolutionState newChanged = new SolutionState(toAdd,null);
+							 if (curQuality > best.getOriginalQuality() || curQuality >= 1.0) {
+								 if (curQuality > best.getOriginalQuality()) {
+									 clearSolutions.add(best.getSolution());
+									 best = newChanged;
+								 }
+								 for (int i = undoers.size()-1; i >= 0; --i) {
+										undoers.get(i).undo();
+								 }
+								 Change<?>[] oriNewChange = buildOriginalResourceChange(changed.getSolution().getChanges(),ch);
+								 if (allSolutions.add(oriNewChange[0].unbox())) {
+									 returnedSolutions.add(oriNewChange[1]);
+									 getStream().add(oriNewChange[0],oriNewChange[1], curQuality, oriNewChange[1].getCosts());
+								 }
+								 undoers = new ArrayList<Undoer>();
+								 for (Change<?> change: changed.getSolution().getChanges()) {
+									undoers.add(change.execute());
+								 }
+								 undoers.add(ch.execute());
+							 } else {
+								 clearSolutions.add(toAdd);
+							 }
+								 
+							 changed = newChanged;
+						 } finally {
+							
+						 }
+						
+						break;
+					}
+					
+					for (LocalSearchPartialSolution clear: clearSolutions) {
+						//clear.clearFixes();
+					}
+					
+				}
+				
+				curSolutions.add(best);
+				if (provider != NeighborhoodProvider.DEFAULT_DIRECTFIX) {
+					System.out.println("Local search tries changes " + Arrays.toString(addChanges.toArray()));
+				}
+			}  catch (Exception e)  {
+				if (abort) {
+					return false;
+				}
+				e.printStackTrace();
+				StringWriter writer = new StringWriter();
+				PrintWriter pw = new PrintWriter(writer);
+				e.printStackTrace(pw);
+				String op = writer.toString();
+				System.out.println(op);
+			} finally {
+
+				 for (int i = undoers.size()-1; i >= 0; --i) {
+					undoers.get(i).undo();
+				 }
+			}
+			}
+			
+		} else {
+		
 		try {
 		while (!curSolutions.isEmpty()) {
 			if (abort || new Date().getTime() >= endTime) {
@@ -511,6 +662,7 @@ public class LocalSearchInterfaceImpl implements LocalSearchInterface {
 			System.out.println(op);
 		}
 		
+		}
 		if (curSolutions.isEmpty()) {
 			isFinished = true;
 		}

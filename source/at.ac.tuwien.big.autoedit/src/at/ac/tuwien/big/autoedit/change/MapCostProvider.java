@@ -11,7 +11,7 @@ import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EStructuralFeature;
 
 import at.ac.tuwien.big.autoedit.change.CostProvider.CostFunction;
-import at.ac.tuwien.big.autoedit.ecore.util.MyEcoreUtil;
+import at.ac.tuwien.big.xtext.util.MyEcoreUtil;
 import net.ricecode.similarity.LevenshteinDistanceStrategy;
 
 public class MapCostProvider implements CostProvider{
@@ -32,7 +32,8 @@ public class MapCostProvider implements CostProvider{
 			if (x == null || y == null) {
 				return (x == y)?0.01:1.0;
 			} else {
-				return 0.01+0.99*(1.0-strat.score(x, y))*Math.max(x.length(),y.length());
+				double score = strat.score(x,y);
+				return 0.01+0.99*(1.0-score)*Math.max(x.length(),y.length());
 			}
 		});
 		CostFunction<Number> numberComparison = (x,y)->{

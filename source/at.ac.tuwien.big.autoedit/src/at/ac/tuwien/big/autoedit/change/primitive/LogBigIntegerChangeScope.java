@@ -13,6 +13,9 @@ public class LogBigIntegerChangeScope implements ValueScope<BigInteger, Boolean>
 	
 	public LogBigIntegerChangeScope(BigInteger curValue)  {
 		this.curValue = curValue;
+		if (this.curValue == null) {
+			this.curValue = BigInteger.ZERO;
+		}
 	}
 
 	@Override

@@ -12,6 +12,8 @@ import at.ac.tuwien.big.autoedit.fixer.SetAdd;
 import at.ac.tuwien.big.autoedit.fixer.SetAddAny;
 import at.ac.tuwien.big.autoedit.fixer.SetRemove;
 import at.ac.tuwien.big.autoedit.fixer.SetRemoveAny;
+import at.ac.tuwien.big.autoedit.fixer.impl.MakeFalseImpl;
+import at.ac.tuwien.big.autoedit.fixer.impl.MakeTrueImpl;
 import at.ac.tuwien.big.autoedit.oclvisit.AbstractSelectiveEvaluator;
 import at.ac.tuwien.big.autoedit.oclvisit.ExpressionResult;
 import at.ac.tuwien.big.autoedit.oclvisit.FixingGenerator;
@@ -39,7 +41,7 @@ public class SelectMoreOrLessChange  extends AbstractSelectiveEvaluator<Iterator
 				int ind = 0;
 				for (Object o: sourceValue) {
 					if (Objects.equals(obj,o)) {
-						fixAttemptsPerSub[ind].add(shouldcont?MakeTrue.INSTANCE:MakeFalse.INSTANCE);
+						fixAttemptsPerSub[ind].add(shouldcont?MakeTrueImpl.INSTANCE:MakeFalseImpl.INSTANCE);
 					}
 					++ind;
 				}
@@ -56,7 +58,7 @@ public class SelectMoreOrLessChange  extends AbstractSelectiveEvaluator<Iterator
 		} else if (singleAttemptForThis instanceof SetAddAny) {
 			//Make more true
 			for (int i = 1; i < fixAttemptsPerSub.length; ++i) {
-				fixAttemptsPerSub[i].add(MakeTrue.INSTANCE);
+				fixAttemptsPerSub[i].add(MakeTrueImpl.INSTANCE);
 			}
 			//Add more elements
 			fixAttemptsPerSub[0].add(singleAttemptForThis);
@@ -64,7 +66,7 @@ public class SelectMoreOrLessChange  extends AbstractSelectiveEvaluator<Iterator
 		} else if (singleAttemptForThis instanceof SetRemoveAny) {
 			//Make more false
 			for (int i = 1; i < fixAttemptsPerSub.length; ++i) {
-				fixAttemptsPerSub[i].add(MakeFalse.INSTANCE);
+				fixAttemptsPerSub[i].add(MakeFalseImpl.INSTANCE);
 			}
 			//Remove elements
 			fixAttemptsPerSub[0].add(singleAttemptForThis);
