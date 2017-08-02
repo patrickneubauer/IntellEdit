@@ -1,4 +1,6 @@
-# Automated Generation of Consistency-Achieving Model Editors with IntellEdit
+# (!) This project has been integrated as a module of [XMLIntellEdit](https://github.com/patrickneubauer/XMLIntellEdit) -- please check out the [XMLIntellEdit](https://github.com/patrickneubauer/XMLIntellEdit) repository.
+
+### Automated Generation of Consistency-Achieving Model Editors with IntellEdit
 ![Logo](http://intelledit.big.tuwien.ac.at/img/IntellEditLogo.svg)
 
 The advances of domain-specific modeling languages (DSMLs) and their editors, created with modern language workbenches, have convinced domain experts of applying them as important and powerful means in their daily endeavors. 
