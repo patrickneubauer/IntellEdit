@@ -6,8 +6,6 @@ import org.eclipse.xtext.generator.IGenerator;
 import org.eclipse.xtext.parser.IEncodingProvider;
 import org.eclipse.xtext.resource.generic.AbstractGenericResourceRuntimeModule;
 
-import at.ac.tuwien.big.oclgen.OCL2ValidatorGenerator;
-
 public class OCL2QuickfixGeneratorModule extends
 		AbstractGenericResourceRuntimeModule {
 
